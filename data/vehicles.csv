@@ -1,0 +1,13 @@
+vehicle_id,type,capacity_tons,max_range_km,status,home_base
+V001,HEMTT,10,480,available,SP001
+V002,HEMTT,10,480,available,SP001
+V003,M1078,5,560,Available,SP002
+V004,HEMTT,10,480,maintenance,SP004
+V005,M1078,5,560,available,SP004
+V006,PLS,16.5,520,available,SP008
+V007,hemtt,10,480,AVAILABLE,SP008
+V008,M1078,5,560,available,SP010
+V009,PLS,16.5,520,available,SP010
+V010,HEMTT,10,,available,SP006
+V011,M1078,5,560,Available,SP011
+V012,PLS,16.5,520,available,SP001

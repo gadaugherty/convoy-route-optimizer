@@ -1,0 +1,13 @@
+dest_id,dest_name,latitude,longitude,demand_tons,priority,notes
+D001,Patrol Base Alpha,33.245,-44.412,25,HIGH,needs ammo
+D002,Checkpoint Bravo,33.178,-44.389,15,medium,
+D003,Outpost Charlie,33.401,-44.467,30,high,medical supplies urgent
+D004,Patrol Base Delta,33.289,-44.301,20,LOW,routine resupply
+D005,checkpoint echo,33.156,-44.278,10,Medium,
+D006,Outpost Foxtrot,33.512,-44.534,45,HIGH,fuel priority
+D007,Patrol Base Golf,33.367,-44.198,18,,
+D008,Checkpoint Hotel,34.612,-43.789,22,high,
+D009,Outpost India,33.445,-44.623,35,MEDIUM,heavy equipment
+D010,Patrol Base Juliet,32.901,-44.478,28,high,
+D011,Checkpoint Kilo,33.234,-44.567,12,low,
+D012,Outpost Lima,30.623,-47.734,40,HIGH,remote location

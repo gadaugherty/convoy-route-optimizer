@@ -1,0 +1,19 @@
+route_id,from_point,to_point,distance_km,road_condition,threat_level,notes
+R001,SP001,D001,12.5,paved,low,main supply route
+R002,SP001,D002,18.3,paved,LOW,
+R003,SP002,D002,8.7,paved,medium,
+R004,SP002,D003,15.2,gravel,HIGH,IED activity reported
+R005,SP004,D003,22.1,paved,medium,
+R006,SP004,D006,14.8,paved,low,
+R007,SP008,D006,11.2,paved,LOW,
+R008,SP008,D007,9.4,gravel,medium,
+R009,SP006,D001,16.7,paved,low,alternate route
+R010,SP006,D004,13.9,paved,MEDIUM,
+R011,SP001,D004,10.2,paved,low,
+R012,SP010,D012,21.5,gravel,high,remote - air support recommended
+R013,SP011,D008,18.9,paved,medium,
+R014,SP008,D009,19.3,gravel,Medium,
+R015,SP004,D009,24.6,,high,road damaged
+R016,D001,D002,7.8,paved,low,inter-destination link
+R017,D003,D006,16.2,gravel,medium,
+R018,SP002,D005,11.4,paved,low,

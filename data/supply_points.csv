@@ -1,0 +1,13 @@
+id,name,lat,lon,inventory_tons,status
+SP001,Camp Liberty,33.312,-44.366,150,active
+SP002,FOB Thunder,33.198,-44.401,85,active
+SP003,Camp Victory,33.285,-44.329,,active
+SP004,FOB Warrior,33.421,-44.512,200,active
+sp005,Camp Speicher,34.562,-43.724,95,ACTIVE
+SP006,FOB Hammer,33.145,-44.287,120,active
+SP007,,33.389,-44.198,60,inactive
+SP008,Camp Taji,33.527,-44.263,175,active
+SP009,FOB Kalsu,32.824,-44.521,90,active
+SP010,Camp Bucca,30.513,-47.828,250,active
+SP011,FOB Sykes,36.328,-43.145,110,Active
+SP012,Camp Fallujah,33.353,-43.783,80,active
