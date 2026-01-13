@@ -5,10 +5,8 @@ Implements vehicle routing optimization with constraints.
 
 import pandas as pd
 import numpy as np
-from typing import List, Dict, Tuple, Optional
+from typing import List, Dict, Tuple, Optional, Set
 from dataclasses import dataclass
-from ortools.constraint_solver import routing_enums_pb2
-from ortools.constraint_solver import pywrapcp
 
 
 @dataclass
@@ -41,7 +39,7 @@ class ConvoyOptimizer:
         destinations: pd.DataFrame,
         vehicles: pd.DataFrame,
         routes: pd.DataFrame,
-        max_threat_level: str = 'high'  # 'low', 'medium', 'high'
+        max_threat_level: str = 'high'
     ):
         self.supply_points = supply_points
         self.destinations = destinations
@@ -49,46 +47,95 @@ class ConvoyOptimizer:
         self.routes = routes
         self.max_threat_level = max_threat_level
         
-        # Build distance matrix
-        self.distance_matrix = self._build_distance_matrix()
+        # Build graph representation
+        self.graph = self._build_graph()
         
-        # Threat levels to avoid
+        # Threat levels mapping
         self.threat_threshold = {'low': 1, 'medium': 2, 'high': 3}
     
-    def _build_distance_matrix(self) -> np.ndarray:
+    def _build_graph(self) -> Dict[str, Dict[str, Dict]]:
         """
-        Build a distance matrix between all supply points and destinations.
-        Uses effective distance (accounts for threat level).
+        Build adjacency graph from routes.
+        graph[from][to] = {distance, threat_level, effective_distance, ...}
         """
-        # Get all location IDs
-        sp_ids = self.supply_points['id'].tolist()
-        dest_ids = self.destinations['dest_id'].tolist()
-        all_locations = sp_ids + dest_ids
-        n = len(all_locations)
+        graph = {}
         
-        # Initialize with large values (no direct route)
-        matrix = np.full((n, n), 9999.0)
-        np.fill_diagonal(matrix, 0)
-        
-        # Fill in known routes
         for _, route in self.routes.iterrows():
             from_id = route['from_point']
             to_id = route['to_point']
             
-            if from_id in all_locations and to_id in all_locations:
-                i = all_locations.index(from_id)
-                j = all_locations.index(to_id)
-                
-                # Use effective distance (threat-adjusted)
-                matrix[i][j] = route['effective_distance']
-                matrix[j][i] = route['effective_distance']  # Assume bidirectional
+            edge_data = {
+                'distance_km': route['distance_km'],
+                'threat_level': route['threat_level'],
+                'effective_distance': route['effective_distance'],
+                'road_condition': route['road_condition']
+            }
+            
+            # Add both directions (bidirectional roads)
+            if from_id not in graph:
+                graph[from_id] = {}
+            if to_id not in graph:
+                graph[to_id] = {}
+            
+            graph[from_id][to_id] = edge_data
+            graph[to_id][from_id] = edge_data
         
-        self.location_ids = all_locations
-        return matrix
+        return graph
     
-    def _get_location_index(self, location_id: str) -> int:
-        """Get matrix index for a location ID."""
-        return self.location_ids.index(location_id)
+    def _get_edge(self, from_id: str, to_id: str) -> Optional[Dict]:
+        """Get edge data between two nodes."""
+        if from_id in self.graph and to_id in self.graph[from_id]:
+            return self.graph[from_id][to_id]
+        return None
+    
+    def _find_path_distance(self, from_id: str, to_id: str, avoid_high_threat: bool) -> Tuple[float, List[str], str]:
+        """
+        Find shortest path between two points using BFS.
+        Returns (distance, path, max_threat_level).
+        """
+        if from_id == to_id:
+            return 0.0, [from_id], 'low'
+        
+        # Direct edge?
+        edge = self._get_edge(from_id, to_id)
+        if edge:
+            if avoid_high_threat and edge['threat_level'] == 'high':
+                pass  # Skip direct high-threat, try to find alternate
+            else:
+                return edge['distance_km'], [from_id, to_id], edge['threat_level']
+        
+        # BFS for shortest path
+        from collections import deque
+        queue = deque([(from_id, [from_id], 0.0, 'low')])
+        visited = {from_id}
+        
+        while queue:
+            current, path, dist, max_threat = queue.popleft()
+            
+            if current not in self.graph:
+                continue
+            
+            for neighbor, edge_data in self.graph[current].items():
+                if neighbor in visited:
+                    continue
+                
+                # Skip high threat if avoiding
+                if avoid_high_threat and edge_data['threat_level'] == 'high':
+                    continue
+                
+                new_dist = dist + edge_data['distance_km']
+                new_path = path + [neighbor]
+                new_threat = max(max_threat, edge_data['threat_level'], 
+                               key=lambda t: self.threat_threshold.get(t, 0))
+                
+                if neighbor == to_id:
+                    return new_dist, new_path, new_threat
+                
+                visited.add(neighbor)
+                queue.append((neighbor, new_path, new_dist, new_threat))
+        
+        # No path found
+        return float('inf'), [], 'high'
     
     def optimize_routes(
         self,
@@ -98,16 +145,7 @@ class ConvoyOptimizer:
     ) -> List[ConvoyAssignment]:
         """
         Optimize delivery routes from a single supply point.
-        
-        Args:
-            supply_point_id: Starting supply point
-            available_vehicles: List of vehicle IDs to use
-            avoid_high_threat: Whether to avoid high-threat routes
-            
-        Returns:
-            List of ConvoyAssignment objects
         """
-        # Filter vehicles
         vehicles = self.vehicles[
             self.vehicles['vehicle_id'].isin(available_vehicles)
         ].copy()
@@ -116,19 +154,20 @@ class ConvoyOptimizer:
             print("No available vehicles provided")
             return []
         
-        # Get destinations that need service
-        destinations = self.destinations.copy()
+        # Sort vehicles by capacity (largest first for better packing)
+        vehicles = vehicles.sort_values('capacity_tons', ascending=False)
         
-        # Sort by priority (high priority first)
+        # Get destinations sorted by priority
+        destinations = self.destinations.copy()
         destinations = destinations.sort_values('priority_score', ascending=False)
         
         assignments = []
-        remaining_destinations = destinations['dest_id'].tolist()
+        remaining_destinations = set(destinations['dest_id'].tolist())
         
         for _, vehicle in vehicles.iterrows():
             if not remaining_destinations:
                 break
-                
+            
             assignment = self._assign_vehicle_route(
                 vehicle=vehicle,
                 supply_point_id=supply_point_id,
@@ -138,10 +177,8 @@ class ConvoyOptimizer:
             
             if assignment and assignment.destinations:
                 assignments.append(assignment)
-                # Remove assigned destinations from remaining
                 for dest in assignment.destinations:
-                    if dest in remaining_destinations:
-                        remaining_destinations.remove(dest)
+                    remaining_destinations.discard(dest)
         
         return assignments
     
@@ -149,28 +186,30 @@ class ConvoyOptimizer:
         self,
         vehicle: pd.Series,
         supply_point_id: str,
-        destination_ids: List[str],
+        destination_ids: Set[str],
         avoid_high_threat: bool
     ) -> Optional[ConvoyAssignment]:
         """
-        Assign optimal route to a single vehicle using greedy nearest-neighbor.
+        Assign optimal route to a single vehicle using greedy nearest-neighbor
+        with proper path finding.
         """
         capacity = vehicle['capacity_tons']
         max_range = vehicle['max_range_km']
         
-        route = [supply_point_id]
+        route_sequence = [supply_point_id]
         assigned_destinations = []
         total_distance = 0.0
         total_demand = 0.0
         max_threat_seen = 'low'
         
         current_location = supply_point_id
-        remaining = destination_ids.copy()
+        remaining = set(destination_ids)
         
         while remaining:
-            # Find nearest feasible destination
             best_dest = None
             best_distance = float('inf')
+            best_path = []
+            best_threat = 'low'
             
             for dest_id in remaining:
                 dest_row = self.destinations[
@@ -179,34 +218,36 @@ class ConvoyOptimizer:
                 
                 demand = dest_row['demand_tons']
                 
-                # Check capacity constraint
+                # Check capacity
                 if total_demand + demand > capacity:
                     continue
                 
-                # Get distance
-                try:
-                    i = self._get_location_index(current_location)
-                    j = self._get_location_index(dest_id)
-                    distance = self.distance_matrix[i][j]
-                except (ValueError, IndexError):
+                # Find path to this destination
+                dist_to_dest, path_to_dest, threat = self._find_path_distance(
+                    current_location, dest_id, avoid_high_threat
+                )
+                
+                if dist_to_dest == float('inf'):
                     continue
                 
-                # Check if route exists and threat level
-                route_info = self._get_route_info(current_location, dest_id)
-                if route_info is None:
-                    continue
-                    
-                if avoid_high_threat and route_info['threat_level'] == 'high':
+                # Check if we can still return to base
+                dist_back, _, _ = self._find_path_distance(
+                    dest_id, supply_point_id, avoid_high_threat
+                )
+                
+                if dist_back == float('inf'):
                     continue
                 
-                # Check range constraint (need to be able to return)
-                return_distance = self._estimate_return_distance(dest_id, supply_point_id)
-                if total_distance + distance + return_distance > max_range:
+                # Check range constraint
+                if total_distance + dist_to_dest + dist_back > max_range:
                     continue
                 
-                if distance < best_distance:
-                    best_distance = distance
+                # Prefer closer destinations
+                if dist_to_dest < best_distance:
+                    best_distance = dist_to_dest
                     best_dest = dest_id
+                    best_path = path_to_dest
+                    best_threat = threat
             
             if best_dest is None:
                 break
@@ -217,17 +258,18 @@ class ConvoyOptimizer:
             ].iloc[0]
             
             assigned_destinations.append(best_dest)
-            route.append(best_dest)
+            
+            # Add intermediate path nodes (excluding current which is already in route)
+            for node in best_path[1:]:
+                route_sequence.append(node)
+            
             total_distance += best_distance
             total_demand += dest_row['demand_tons']
             remaining.remove(best_dest)
             
-            # Track threat level
-            route_info = self._get_route_info(current_location, best_dest)
-            if route_info:
-                threat = route_info['threat_level']
-                if self.threat_threshold.get(threat, 0) > self.threat_threshold.get(max_threat_seen, 0):
-                    max_threat_seen = threat
+            # Update max threat
+            if self.threat_threshold.get(best_threat, 0) > self.threat_threshold.get(max_threat_seen, 0):
+                max_threat_seen = best_threat
             
             current_location = best_dest
         
@@ -235,9 +277,20 @@ class ConvoyOptimizer:
             return None
         
         # Add return leg
-        route.append(supply_point_id)
-        return_dist = self._estimate_return_distance(current_location, supply_point_id)
-        total_distance += return_dist
+        dist_back, path_back, threat_back = self._find_path_distance(
+            current_location, supply_point_id, avoid_high_threat
+        )
+        
+        if path_back:
+            for node in path_back[1:]:
+                route_sequence.append(node)
+        else:
+            route_sequence.append(supply_point_id)
+        
+        total_distance += dist_back if dist_back != float('inf') else 50.0
+        
+        if self.threat_threshold.get(threat_back, 0) > self.threat_threshold.get(max_threat_seen, 0):
+            max_threat_seen = threat_back
         
         return ConvoyAssignment(
             vehicle_id=vehicle['vehicle_id'],
@@ -247,35 +300,8 @@ class ConvoyOptimizer:
             total_distance_km=round(total_distance, 1),
             total_demand_tons=total_demand,
             threat_exposure=max_threat_seen,
-            route_sequence=route
+            route_sequence=route_sequence
         )
-    
-    def _get_route_info(self, from_id: str, to_id: str) -> Optional[Dict]:
-        """Get route information between two points."""
-        route = self.routes[
-            ((self.routes['from_point'] == from_id) & (self.routes['to_point'] == to_id)) |
-            ((self.routes['from_point'] == to_id) & (self.routes['to_point'] == from_id))
-        ]
-        
-        if len(route) == 0:
-            return None
-            
-        row = route.iloc[0]
-        return {
-            'distance_km': row['distance_km'],
-            'threat_level': row['threat_level'],
-            'road_condition': row['road_condition'],
-            'effective_distance': row['effective_distance']
-        }
-    
-    def _estimate_return_distance(self, from_id: str, to_id: str) -> float:
-        """Estimate return distance to supply point."""
-        try:
-            i = self._get_location_index(from_id)
-            j = self._get_location_index(to_id)
-            return self.distance_matrix[i][j]
-        except (ValueError, IndexError):
-            return 50.0  # Default estimate
     
     def get_summary_stats(self, assignments: List[ConvoyAssignment]) -> Dict:
         """Generate summary statistics for route assignments."""
@@ -309,7 +335,7 @@ def print_assignments(assignments: List[ConvoyAssignment]) -> None:
     for i, a in enumerate(assignments, 1):
         print(f"\nConvoy {i}: {a.vehicle_id} ({a.vehicle_type})")
         print(f"  Route: {' -> '.join(a.route_sequence)}")
-        print(f"  Destinations: {len(a.destinations)}")
+        print(f"  Destinations: {len(a.destinations)} ({', '.join(a.destinations)})")
         print(f"  Total Distance: {a.total_distance_km} km")
         print(f"  Cargo: {a.total_demand_tons} tons")
         print(f"  Threat Exposure: {a.threat_exposure.upper()}")

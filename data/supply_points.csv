@@ -1,13 +1,13 @@
 id,name,lat,lon,inventory_tons,status
-SP001,Camp Liberty,33.312,-44.366,150,active
-SP002,FOB Thunder,33.198,-44.401,85,active
-SP003,Camp Victory,33.285,-44.329,,active
-SP004,FOB Warrior,33.421,-44.512,200,active
-sp005,Camp Speicher,34.562,-43.724,95,ACTIVE
-SP006,FOB Hammer,33.145,-44.287,120,active
-SP007,,33.389,-44.198,60,inactive
-SP008,Camp Taji,33.527,-44.263,175,active
-SP009,FOB Kalsu,32.824,-44.521,90,active
-SP010,Camp Bucca,30.513,-47.828,250,active
-SP011,FOB Sykes,36.328,-43.145,110,Active
-SP012,Camp Fallujah,33.353,-43.783,80,active
+SP001,Fort Hood Main,31.134,-97.775,150,active
+SP002,Camp Bowie,31.725,-98.985,85,active
+SP003,Fort Worth Depot,32.749,-97.330,,active
+SP004,Austin Logistics Hub,30.267,-97.743,200,active
+SP005,San Antonio Base,29.424,-98.494,95,ACTIVE
+SP006,Waco Supply Point,31.549,-97.146,120,active
+SP007,,31.892,-97.024,60,inactive
+SP008,Temple Storage,31.098,-97.343,175,active
+SP009,Killeen Depot,31.117,-97.727,90,active
+SP010,Bryan Logistics,30.674,-96.370,250,active
+SP011,Abilene Forward Base,32.449,-99.733,110,Active
+SP012,Lampasas Outpost,31.064,-98.181,80,active

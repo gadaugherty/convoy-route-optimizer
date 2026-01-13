@@ -1,13 +1,13 @@
 dest_id,dest_name,latitude,longitude,demand_tons,priority,notes
-D001,Patrol Base Alpha,33.245,-44.412,25,HIGH,needs ammo
-D002,Checkpoint Bravo,33.178,-44.389,15,medium,
-D003,Outpost Charlie,33.401,-44.467,30,high,medical supplies urgent
-D004,Patrol Base Delta,33.289,-44.301,20,LOW,routine resupply
-D005,checkpoint echo,33.156,-44.278,10,Medium,
-D006,Outpost Foxtrot,33.512,-44.534,45,HIGH,fuel priority
-D007,Patrol Base Golf,33.367,-44.198,18,,
-D008,Checkpoint Hotel,34.612,-43.789,22,high,
-D009,Outpost India,33.445,-44.623,35,MEDIUM,heavy equipment
-D010,Patrol Base Juliet,32.901,-44.478,28,high,
-D011,Checkpoint Kilo,33.234,-44.567,12,low,
-D012,Outpost Lima,30.623,-47.734,40,HIGH,remote location
+D001,Gatesville Checkpoint,31.435,-97.736,8,HIGH,needs ammo
+D002,Copperas Cove Post,31.124,-97.903,5,medium,
+D003,Belton Outpost,31.056,-97.464,12,high,medical supplies urgent
+D004,Harker Heights Base,31.083,-97.660,6,LOW,routine resupply
+D005,Nolanville Station,31.079,-97.608,4,Medium,
+D006,Salado Forward Post,30.947,-97.539,15,HIGH,fuel priority
+D007,Florence Checkpoint,30.841,-97.794,7,,
+D008,Georgetown Depot,30.633,-97.678,9,high,
+D009,Round Rock Hub,30.508,-97.679,11,MEDIUM,heavy equipment
+D010,Taylor Station,30.571,-97.410,8,high,
+D011,Jarrell Outpost,30.821,-97.607,5,low,
+D012,Burnet Supply Point,30.758,-98.228,14,HIGH,remote location

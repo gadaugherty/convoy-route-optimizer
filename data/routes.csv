@@ -17,3 +17,18 @@ R015,SP004,D009,24.6,,high,road damaged
 R016,D001,D002,7.8,paved,low,inter-destination link
 R017,D003,D006,16.2,gravel,medium,
 R018,SP002,D005,11.4,paved,low,
+R019,SP001,D003,25.6,paved,medium,alternate to D003
+R020,SP001,D005,14.1,paved,low,direct route
+R021,SP001,D006,28.4,paved,medium,longer but safer
+R022,SP001,D007,19.8,paved,low,
+R023,SP001,D009,31.2,gravel,medium,
+R024,SP001,D010,35.7,paved,medium,southern route
+R025,SP001,D011,22.3,paved,low,
+R026,D001,D004,8.5,paved,low,short connector
+R027,D002,D005,9.2,paved,low,
+R028,D004,D007,12.1,paved,low,
+R029,D005,D011,15.8,paved,low,
+R030,D006,D009,14.5,gravel,medium,
+R031,D007,D009,11.3,paved,medium,
+R032,SP008,D010,23.4,paved,medium,
+R033,D010,D011,18.9,paved,low,
