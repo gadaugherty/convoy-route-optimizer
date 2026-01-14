@@ -1,0 +1,1237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Convoy Route Optimizer</title>
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Courier New', monospace;
+            background: #001428;
+            color: #00d4ff;
+            overflow: hidden;
+        }
+        
+        /* Header */
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 50px;
+            background: rgba(0, 20, 40, 0.95);
+            border-bottom: 2px solid #00d4ff;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            z-index: 1000;
+        }
+        
+        .logo {
+            font-size: 18px;
+            font-weight: bold;
+            text-shadow: 0 0 10px #00d4ff;
+        }
+        
+        .logo span {
+            color: #00ff88;
+        }
+        
+        .status {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            font-size: 12px;
+        }
+        
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background: #00ff88;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; box-shadow: 0 0 5px #00ff88; }
+            50% { opacity: 0.5; box-shadow: 0 0 15px #00ff88; }
+        }
+        
+        @keyframes critical-pulse {
+            0%, 100% { 
+                opacity: 1;
+                filter: drop-shadow(0 0 4px #ff3366);
+            }
+            50% { 
+                opacity: 0.7;
+                filter: drop-shadow(0 0 12px #ff3366);
+            }
+        }
+        
+        .critical-marker {
+            animation: critical-pulse 1.5s ease-in-out infinite;
+        }
+        
+        /* Map Container */
+        #map {
+            position: fixed;
+            top: 50px;
+            left: 0;
+            right: 300px;
+            bottom: 200px;
+        }
+        
+        /* Control Panel */
+        .control-panel {
+            position: fixed;
+            top: 50px;
+            right: 0;
+            width: 300px;
+            bottom: 0;
+            background: rgba(0, 20, 40, 0.95);
+            border-left: 2px solid #00d4ff;
+            overflow-y: auto;
+            padding: 15px;
+        }
+        
+        .panel-section {
+            margin-bottom: 20px;
+        }
+        
+        .panel-title {
+            font-size: 12px;
+            color: #888;
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid rgba(0, 212, 255, 0.3);
+        }
+        
+        select, button {
+            width: 100%;
+            padding: 10px;
+            background: rgba(0, 212, 255, 0.1);
+            border: 1px solid #00d4ff;
+            color: #00d4ff;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            cursor: pointer;
+            margin-bottom: 10px;
+            border-radius: 4px;
+        }
+        
+        select:hover, button:hover {
+            background: rgba(0, 212, 255, 0.2);
+        }
+        
+        button.primary {
+            background: rgba(0, 255, 136, 0.2);
+            border-color: #00ff88;
+            color: #00ff88;
+        }
+        
+        button.primary:hover {
+            background: rgba(0, 255, 136, 0.3);
+        }
+        
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .checkbox-group input {
+            width: 16px;
+            height: 16px;
+        }
+        
+        .checkbox-group label {
+            font-size: 12px;
+        }
+        
+        /* Stats Display */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        
+        .stat-box {
+            background: rgba(0, 212, 255, 0.1);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            padding: 10px;
+            text-align: center;
+            border-radius: 4px;
+        }
+        
+        .stat-value {
+            font-size: 20px;
+            font-weight: bold;
+            text-shadow: 0 0 10px currentColor;
+        }
+        
+        .stat-label {
+            font-size: 9px;
+            color: #888;
+            margin-top: 5px;
+        }
+        
+        .stat-box.green .stat-value { color: #00ff88; }
+        .stat-box.cyan .stat-value { color: #00d4ff; }
+        .stat-box.orange .stat-value { color: #ffaa00; }
+        .stat-box.pink .stat-value { color: #ff00ff; }
+        
+        /* Data Panel (Bottom) */
+        .data-panel {
+            position: fixed;
+            left: 0;
+            right: 300px;
+            bottom: 0;
+            height: 200px;
+            background: rgba(0, 20, 40, 0.95);
+            border-top: 2px solid #00d4ff;
+            overflow: hidden;
+        }
+        
+        .data-tabs {
+            display: flex;
+            background: rgba(0, 212, 255, 0.1);
+            border-bottom: 1px solid rgba(0, 212, 255, 0.3);
+        }
+        
+        .data-tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            font-size: 11px;
+            border-right: 1px solid rgba(0, 212, 255, 0.3);
+        }
+        
+        .data-tab:hover {
+            background: rgba(0, 212, 255, 0.2);
+        }
+        
+        .data-tab.active {
+            background: rgba(0, 212, 255, 0.2);
+            color: #00ff88;
+        }
+        
+        .data-content {
+            height: calc(100% - 40px);
+            overflow-y: auto;
+            padding: 10px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 11px;
+        }
+        
+        th {
+            text-align: left;
+            padding: 8px;
+            color: #888;
+            border-bottom: 1px solid rgba(0, 212, 255, 0.3);
+            position: sticky;
+            top: 0;
+            background: rgba(0, 20, 40, 1);
+            z-index: 10;
+        }
+        
+        td {
+            padding: 8px;
+            border-bottom: 1px solid rgba(0, 212, 255, 0.1);
+        }
+        
+        tr:hover {
+            background: rgba(0, 212, 255, 0.1);
+        }
+        
+        .threat-low { color: #00ff88; }
+        .threat-medium { color: #ffaa00; }
+        .threat-high { color: #ff3366; }
+        
+        .priority-high { color: #ff3366; }
+        .priority-medium { color: #ffaa00; }
+        .priority-low { color: #00ff88; }
+        
+        /* Loading Overlay */
+        .loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 20, 40, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .loading.hidden {
+            display: none;
+        }
+        
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid rgba(0, 212, 255, 0.3);
+            border-top-color: #00d4ff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Convoy colors */
+        .convoy-1 { color: #00d4ff; }
+        .convoy-2 { color: #ff00ff; }
+        .convoy-3 { color: #00ff88; }
+        .convoy-4 { color: #ffaa00; }
+        .convoy-5 { color: #ff3366; }
+        
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 20, 40, 0.5);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(0, 212, 255, 0.5);
+            border-radius: 4px;
+        }
+        
+        /* Legend inside map */
+        .map-legend {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0, 20, 40, 0.9);
+            border: 1px solid #00d4ff;
+            padding: 10px;
+            border-radius: 4px;
+            font-size: 10px;
+            z-index: 500;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 4px 0;
+        }
+        
+        .legend-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+        
+        .legend-line {
+            width: 20px;
+            height: 3px;
+            border-radius: 2px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Overlay -->
+    <div class="loading" id="loading">
+        <div class="spinner"></div>
+        <div>INITIALIZING SYSTEM...</div>
+    </div>
+    
+    <!-- Header -->
+    <div class="header">
+        <div class="logo">[X] CONVOY <span>OPTIMIZER</span></div>
+        <div class="status">
+            <div class="status-dot"></div>
+            <span>SYSTEM ONLINE</span>
+            <span id="clock"></span>
+        </div>
+    </div>
+    
+    <!-- Map -->
+    <div id="map"></div>
+    
+    <!-- Control Panel -->
+    <div class="control-panel">
+        <div class="panel-section">
+            <div class="panel-title">// MISSION CONTROL</div>
+            
+            <label style="font-size: 11px; display: block; margin-bottom: 5px;">Region:</label>
+            <select id="region-select" onchange="filterSupplyPoints()">
+                <option value="ALL">ALL REGIONS</option>
+            </select>
+            
+            <label style="font-size: 11px; display: block; margin-bottom: 5px; margin-top: 10px;">Supply Point:</label>
+            <select id="supply-point-select">
+                <option value="">Loading...</option>
+            </select>
+            
+            <div class="checkbox-group">
+                <input type="checkbox" id="avoid-threat" checked>
+                <label for="avoid-threat">Avoid High Threat Routes</label>
+            </div>
+            
+            <div class="checkbox-group">
+                <input type="checkbox" id="use-roads" checked>
+                <label for="use-roads">Show Road Routes</label>
+            </div>
+            
+            <button class="primary" id="optimize-btn" onclick="runOptimization()">
+                > RUN OPTIMIZATION
+            </button>
+            
+            <button onclick="showAllConvoys()">
+                SHOW ALL CONVOYS
+            </button>
+            
+            <button onclick="clearConvoys()">
+                X CLEAR CONVOYS
+            </button>
+        </div>
+        
+        <div class="panel-section">
+            <div class="panel-title">// MISSION STATS</div>
+            <div class="stats-grid">
+                <div class="stat-box green">
+                    <div class="stat-value" id="stat-convoys">0</div>
+                    <div class="stat-label">CONVOYS</div>
+                </div>
+                <div class="stat-box cyan">
+                    <div class="stat-value" id="stat-destinations">0/0</div>
+                    <div class="stat-label">DESTINATIONS</div>
+                </div>
+                <div class="stat-box orange">
+                    <div class="stat-value" id="stat-distance">0</div>
+                    <div class="stat-label">TOTAL KM</div>
+                </div>
+                <div class="stat-box pink">
+                    <div class="stat-value" id="stat-cargo">0t</div>
+                    <div class="stat-label">CARGO</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="panel-section">
+            <div class="panel-title">// SUPPLY POINT INFO</div>
+            <div id="supply-info" style="font-size: 11px;">
+                Select a supply point to view inventory.
+            </div>
+        </div>
+    </div>
+    
+    <!-- Data Panel -->
+    <div class="data-panel">
+        <div class="data-tabs">
+            <div class="data-tab active" onclick="showTab('convoys')">ACTIVE CONVOYS</div>
+            <div class="data-tab" onclick="showTab('destinations')">DESTINATIONS</div>
+            <div class="data-tab" onclick="showTab('vehicles')">VEHICLES</div>
+        </div>
+        <div class="data-content" id="data-content">
+            <div id="tab-convoys">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>CONVOY</th>
+                            <th>VEHICLE</th>
+                            <th>TYPE</th>
+                            <th>MODE</th>
+                            <th>ROUTE</th>
+                            <th>DISTANCE</th>
+                            <th>ETA</th>
+                            <th>CARGO</th>
+                            <th>THREAT</th>
+                        </tr>
+                    </thead>
+                    <tbody id="convoy-table-body">
+                        <tr><td colspan="9" style="text-align: center; color: #888;">No active convoys. Run optimization to generate routes.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div id="tab-destinations" style="display: none;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>NAME</th>
+                            <th>PRIORITY</th>
+                            <th>FOOD</th>
+                            <th>AMMO</th>
+                            <th>FUEL</th>
+                            <th>MEDICAL</th>
+                            <th>TOTAL</th>
+                        </tr>
+                    </thead>
+                    <tbody id="destinations-table-body">
+                    </tbody>
+                </table>
+            </div>
+            <div id="tab-vehicles" style="display: none;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>TYPE</th>
+                            <th>MODE</th>
+                            <th>CAPACITY</th>
+                            <th>SPEED</th>
+                            <th>MAX RANGE</th>
+                            <th>HOME BASE</th>
+                        </tr>
+                    </thead>
+                    <tbody id="vehicles-table-body">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <script>
+        // Global variables
+        let map;
+        let supplyPoints = [];
+        let destinations = [];
+        let vehicles = [];
+        let routes = [];
+        let convoyLayers = [];
+        let routeNetworkLayer;
+        let currentConvoys = [];  // Store convoy data for highlighting
+        let selectedConvoyIndex = -1;  // Track selected convoy
+        
+        const CONVOY_COLORS = ['#00d4ff', '#ff00ff', '#00ff88', '#ffaa00', '#ff3366', '#aa88ff', '#00ffcc', '#ff6600'];
+        const THREAT_COLORS = { low: '#00ff88', medium: '#ffaa00', high: '#ff3366' };
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', async () => {
+            initMap();
+            await loadData();
+            document.getElementById('loading').classList.add('hidden');
+            updateClock();
+            setInterval(updateClock, 1000);
+        });
+        
+        function initMap() {
+            map = L.map('map', {
+                center: [30, 0],
+                zoom: 2,
+                zoomControl: false,
+                minZoom: 2,
+                maxZoom: 18
+            });
+            
+            // Dark tile layer
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                attribution: '&copy; OpenStreetMap &copy; CARTO'
+            }).addTo(map);
+            
+            // Add zoom control to right side
+            L.control.zoom({ position: 'topright' }).addTo(map);
+            
+            // Update marker sizes on zoom
+            map.on('zoomend', updateMarkerSizes);
+        }
+        
+        async function loadData() {
+            try {
+                // Load all data
+                const [spRes, destRes, vehRes, routeRes] = await Promise.all([
+                    fetch('/api/supply-points'),
+                    fetch('/api/destinations'),
+                    fetch('/api/vehicles'),
+                    fetch('/api/routes')
+                ]);
+                
+                supplyPoints = await spRes.json();
+                destinations = await destRes.json();
+                vehicles = await vehRes.json();
+                routes = await routeRes.json();
+                
+                // Populate region dropdown
+                const regions = [...new Set(supplyPoints.map(sp => sp.region))].sort();
+                const regionSelect = document.getElementById('region-select');
+                regionSelect.innerHTML = '<option value="ALL">ALL REGIONS</option>' + 
+                    regions.map(r => `<option value="${r}">${r}</option>`).join('');
+                
+                // Populate supply point dropdown
+                populateSupplyPointDropdown(supplyPoints);
+                
+                // Add markers
+                addSupplyPointMarkers();
+                addDestinationMarkers();
+                addRouteNetwork();
+                
+                // Populate tables
+                populateDestinationsTable();
+                populateVehiclesTable();
+                
+                // Update supply info
+                updateSupplyInfo();
+                
+                // Listen for dropdown change
+                select.addEventListener('change', updateSupplyInfo);
+                
+            } catch (error) {
+                console.error('Error loading data:', error);
+            }
+        }
+        
+        function addSupplyPointMarkers() {
+            window.supplyMarkers = [];
+            
+            supplyPoints.forEach(sp => {
+                // Glow effect (non-interactive)
+                const glowMarker = L.circleMarker([sp.lat, sp.lon], {
+                    radius: 20,
+                    color: '#00d4ff',
+                    fillColor: '#00d4ff',
+                    fillOpacity: 0.15,
+                    weight: 0,
+                    interactive: false
+                });
+                glowMarker._originalRadius = 20;
+                glowMarker.addTo(map);
+                
+                // Main marker (clickable)
+                const mainMarker = L.circleMarker([sp.lat, sp.lon], {
+                    radius: 10,
+                    color: '#00d4ff',
+                    fillColor: '#00d4ff',
+                    fillOpacity: 0.8,
+                    weight: 2,
+                    fill: true,
+                    bubblingMouseEvents: false
+                });
+                mainMarker._originalRadius = 10;
+                mainMarker.addTo(map);
+                
+                mainMarker.bindTooltip(`
+                    <div style="font-family: monospace; background: rgba(0,20,40,0.95); color: #00d4ff; padding: 10px; border: 1px solid #00d4ff; border-radius: 4px;">
+                        <b>[BASE] ${sp.name}</b><br>
+                        <span style="color: #888;">${sp.country} | ${sp.base_type}</span><br>
+                        <span style="color: #888;">━━━━━━━━━━━━</span><br>
+                        TROOPS: ${sp.troops.toLocaleString()}<br>
+                        FOOD: ${sp.food_tons}t | AMMO: ${sp.ammo_tons}t<br>
+                        FUEL: ${sp.fuel_tons}t | MED: ${sp.medical_tons}t<br>
+                        <span style="color: #888;">Click to select as supply point</span>
+                    </div>
+                `, { className: '', direction: 'top', offset: [0, -10] });
+                
+                // Click handler to select this supply point
+                mainMarker.on('click', () => selectSupplyPoint(sp.id));
+                
+                window.supplyMarkers.push({ glow: glowMarker, main: mainMarker });
+            });
+        }
+        
+        function selectSupplyPoint(spId) {
+            // Find the supply point's region
+            const sp = supplyPoints.find(s => s.id === spId);
+            if (!sp) return;
+            
+            // Set region dropdown to match (or ALL if not found)
+            const regionSelect = document.getElementById('region-select');
+            const regionOptions = Array.from(regionSelect.options).map(o => o.value);
+            if (regionOptions.includes(sp.region)) {
+                regionSelect.value = sp.region;
+                filterSupplyPoints();
+            } else {
+                regionSelect.value = 'ALL';
+                populateSupplyPointDropdown(supplyPoints);
+            }
+            
+            // Set supply point dropdown
+            const spSelect = document.getElementById('supply-point-select');
+            spSelect.value = spId;
+            
+            // Update the info panel
+            updateSupplyInfo();
+        }
+        
+        function addDestinationMarkers() {
+            destinations.forEach(dest => {
+                const color = dest.priority === 'high' ? '#ff3366' : 
+                              dest.priority === 'medium' ? '#ffaa00' : '#00ff88';
+                
+                // Check if critically low (total demand > 15 tons = critical)
+                const isCritical = dest.priority === 'high' && dest.total_demand > 15;
+                
+                // Create marker group for this destination
+                const markerGroup = L.layerGroup();
+                
+                // Glow marker (non-interactive, just visual)
+                const glowMarker = L.circleMarker([dest.lat, dest.lon], {
+                    radius: 15,
+                    color: color,
+                    fillColor: color,
+                    fillOpacity: 0.1,
+                    weight: 0,
+                    interactive: false,
+                    className: isCritical ? 'critical-pulse' : ''
+                });
+                
+                // Main marker - entire circle is clickable
+                const mainMarker = L.circleMarker([dest.lat, dest.lon], {
+                    radius: 7,
+                    color: color,
+                    fillColor: color,
+                    fillOpacity: 0.7,
+                    weight: 2,
+                    fill: true,
+                    bubblingMouseEvents: false,
+                    className: isCritical ? 'critical-marker' : ''
+                });
+                
+                // Store original radius for scaling
+                glowMarker._originalRadius = 15;
+                mainMarker._originalRadius = 7;
+                
+                mainMarker.bindTooltip(`
+                    <div style="font-family: monospace; background: rgba(0,20,40,0.95); color: ${color}; padding: 10px; border: 1px solid ${color}; border-radius: 4px;">
+                        <b>[DEST] ${dest.name}</b><br>
+                        <span style="color: #888;">${dest.country || 'Unknown'}</span><br>
+                        <span style="color: #888;">━━━━━━━━━━━━</span><br>
+                        Priority: <b>${dest.priority.toUpperCase()}</b><br>
+                        FOOD: ${dest.food_tons}t | AMMO: ${dest.ammo_tons}t<br>
+                        FUEL: ${dest.fuel_tons}t | MED: ${dest.medical_tons}t<br>
+                        <span style="color: #888;">Click for shipping options</span>
+                    </div>
+                `, { className: '', direction: 'top', offset: [0, -10] });
+                
+                // Click handler to show shipping options
+                mainMarker.on('click', () => showShippingOptions(dest));
+                
+                // Add glow first (underneath), then main marker on top for clicking
+                markerGroup.addLayer(glowMarker);
+                markerGroup.addLayer(mainMarker);
+                markerGroup.addTo(map);
+                
+                // Store for scaling
+                if (!window.destinationMarkers) window.destinationMarkers = [];
+                window.destinationMarkers.push({ glow: glowMarker, main: mainMarker });
+            });
+        }
+        
+        function addRouteNetwork() {
+            routeNetworkLayer = L.layerGroup().addTo(map);
+            
+            routes.forEach(route => {
+                const color = THREAT_COLORS[route.threat_level] || '#666666';
+                
+                // Glow - non-interactive
+                L.polyline([route.from_coords, route.to_coords], {
+                    weight: 6,
+                    color: color,
+                    opacity: 0.15,
+                    interactive: false
+                }).addTo(routeNetworkLayer);
+                
+                // Line - non-interactive so circles can be clicked
+                L.polyline([route.from_coords, route.to_coords], {
+                    weight: 1,
+                    color: color,
+                    opacity: 0.4,
+                    interactive: false
+                }).addTo(routeNetworkLayer);
+            });
+        }
+        
+        async function runOptimization() {
+            const btn = document.getElementById('optimize-btn');
+            btn.disabled = true;
+            btn.textContent = '... OPTIMIZING';
+            
+            const supplyPoint = document.getElementById('supply-point-select').value;
+            const avoidHighThreat = document.getElementById('avoid-threat').checked;
+            const useRoads = document.getElementById('use-roads').checked;
+            
+            try {
+                const response = await fetch('/api/optimize', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        supply_point: supplyPoint,
+                        avoid_high_threat: avoidHighThreat
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    clearConvoys();
+                    currentConvoys = data.convoys;  // Store for highlighting
+                    await drawConvoys(data.convoys, useRoads);
+                    updateStats(data.summary);
+                    updateConvoyTable(data.convoys);
+                }
+                
+            } catch (error) {
+                console.error('Optimization error:', error);
+            }
+            
+            btn.disabled = false;
+            btn.textContent = '> RUN OPTIMIZATION';
+        }
+        
+        async function drawConvoys(convoys, useRoads) {
+            for (let i = 0; i < convoys.length; i++) {
+                const convoy = convoys[i];
+                const color = CONVOY_COLORS[i % CONVOY_COLORS.length];
+                const layerGroup = L.layerGroup().addTo(map);
+                convoyLayers.push(layerGroup);
+                
+                // Only use road routing for GROUND vehicles
+                let fullPath = [];
+                const isGround = convoy.mode === 'GROUND';
+                const shouldUseRoads = useRoads && isGround;
+                
+                if (shouldUseRoads && convoy.route_coords.length >= 2) {
+                    for (let j = 0; j < convoy.route_coords.length - 1; j++) {
+                        const start = convoy.route_coords[j];
+                        const end = convoy.route_coords[j + 1];
+                        
+                        try {
+                            const res = await fetch(`/api/road-route?start_lat=${start[0]}&start_lon=${start[1]}&end_lat=${end[0]}&end_lon=${end[1]}`);
+                            const roadData = await res.json();
+                            
+                            if (roadData.path) {
+                                if (fullPath.length > 0) {
+                                    fullPath = fullPath.concat(roadData.path.slice(1));
+                                } else {
+                                    fullPath = roadData.path;
+                                }
+                            }
+                        } catch (e) {
+                            if (fullPath.length > 0) {
+                                fullPath.push(end);
+                            } else {
+                                fullPath = [start, end];
+                            }
+                        }
+                    }
+                } else {
+                    // AIR or WATER - use straight lines
+                    fullPath = convoy.route_coords;
+                }
+                
+                // Draw glow layers
+                L.polyline(fullPath, { weight: 14, color: color, opacity: 0.15 }).addTo(layerGroup);
+                L.polyline(fullPath, { weight: 8, color: color, opacity: 0.3 }).addTo(layerGroup);
+                L.polyline(fullPath, { weight: 3, color: color, opacity: 0.9 }).addTo(layerGroup);
+                
+                // Add stop markers
+                convoy.destinations.forEach((destId, idx) => {
+                    const dest = destinations.find(d => d.id === destId);
+                    if (dest) {
+                        L.circleMarker([dest.lat, dest.lon], {
+                            radius: 14,
+                            color: color,
+                            fillColor: '#001428',
+                            fillOpacity: 0.9,
+                            weight: 2
+                        }).addTo(layerGroup);
+                        
+                        // Number label
+                        L.marker([dest.lat, dest.lon], {
+                            icon: L.divIcon({
+                                html: `<div style="color: ${color}; font-weight: bold; font-size: 11px; text-align: center; text-shadow: 0 0 5px ${color};">${idx + 1}</div>`,
+                                iconSize: [20, 20],
+                                iconAnchor: [10, 10],
+                                className: ''
+                            })
+                        }).addTo(layerGroup);
+                    }
+                });
+            }
+        }
+        
+        function clearConvoys() {
+            convoyLayers.forEach(layer => map.removeLayer(layer));
+            convoyLayers = [];
+            currentConvoys = [];
+            selectedConvoyIndex = -1;
+            updateStats({ total_convoys: 0, destinations_served: 0, total_destinations: destinations.length, total_distance_km: 0, total_cargo_tons: 0 });
+            document.getElementById('convoy-table-body').innerHTML = '<tr><td colspan="9" style="text-align: center; color: #888;">No active convoys. Run optimization to generate routes.</td></tr>';
+        }
+        
+        function updateStats(summary) {
+            document.getElementById('stat-convoys').textContent = summary.total_convoys;
+            document.getElementById('stat-destinations').textContent = `${summary.destinations_served}/${summary.total_destinations}`;
+            document.getElementById('stat-distance').textContent = summary.total_distance_km;
+            document.getElementById('stat-cargo').textContent = `${summary.total_cargo_tons}t`;
+        }
+        
+        function updateConvoyTable(convoys) {
+            const tbody = document.getElementById('convoy-table-body');
+            
+            if (convoys.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: #888;">No active convoys.</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = convoys.map((c, i) => {
+                const modeColor = c.mode === 'AIR' ? '#00d4ff' : c.mode === 'WATER' ? '#00aaff' : '#00ff88';
+                return `
+                <tr onclick="highlightConvoy(${i})" style="cursor: pointer;">
+                    <td style="color: ${CONVOY_COLORS[i % CONVOY_COLORS.length]};">> ${c.id}</td>
+                    <td>${c.vehicle_id}</td>
+                    <td>${c.vehicle_type}</td>
+                    <td style="color: ${modeColor};">${c.mode}</td>
+                    <td>${c.destinations.slice(0, 3).join(' > ')}${c.destinations.length > 3 ? '...' : ''}</td>
+                    <td>${c.total_distance_km} km</td>
+                    <td style="color: #00ff88;">${c.eta}</td>
+                    <td>${c.total_demand_tons}t</td>
+                    <td class="threat-${c.threat_exposure}">${c.threat_exposure.toUpperCase()}</td>
+                </tr>
+            `}).join('');
+        }
+        
+        function updateSupplyInfo() {
+            const id = document.getElementById('supply-point-select').value;
+            const sp = supplyPoints.find(s => s.id === id);
+            
+            if (sp) {
+                document.getElementById('supply-info').innerHTML = `
+                    <div style="margin-bottom: 8px;"><b>${sp.name}</b></div>
+                    <div style="color: #888; margin-bottom: 8px;">${sp.country} | ${sp.base_type}</div>
+                    <div>TROOPS: ${sp.troops.toLocaleString()}</div>
+                    <div style="margin-top: 8px; border-top: 1px solid rgba(0,212,255,0.3); padding-top: 8px;">
+                        <div>FOOD: ${sp.food_tons}t</div>
+                        <div>AMMO: ${sp.ammo_tons}t</div>
+                        <div>FUEL: ${sp.fuel_tons}t</div>
+                        <div>MED: ${sp.medical_tons}t</div>
+                    </div>
+                    <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(0,212,255,0.3);">
+                        <b>Total: ${sp.total_inventory}t</b>
+                    </div>
+                `;
+                
+                // Pan map to supply point
+                map.panTo([sp.lat, sp.lon]);
+            }
+        }
+        
+        function populateDestinationsTable() {
+            const tbody = document.getElementById('destinations-table-body');
+            tbody.innerHTML = destinations.map((d, index) => `
+                <tr onclick="onDestinationClick(${index})" style="cursor: pointer;">
+                    <td>${d.id}</td>
+                    <td>${d.name}</td>
+                    <td class="priority-${d.priority}">${d.priority.toUpperCase()}</td>
+                    <td>${d.food_tons}t</td>
+                    <td>${d.ammo_tons}t</td>
+                    <td>${d.fuel_tons}t</td>
+                    <td>${d.medical_tons}t</td>
+                    <td>${d.total_demand}t</td>
+                </tr>
+            `).join('');
+        }
+
+        function onDestinationClick(index) {
+            const dest = destinations[index];
+            if (dest) {
+                showShippingOptions(dest);
+            }
+        }
+        
+        function populateVehiclesTable() {
+            const tbody = document.getElementById('vehicles-table-body');
+            tbody.innerHTML = vehicles.map(v => {
+                const modeColor = v.mode === 'AIR' ? '#00d4ff' : v.mode === 'WATER' ? '#00aaff' : '#00ff88';
+                return `
+                <tr>
+                    <td>${v.id}</td>
+                    <td>${v.type}</td>
+                    <td style="color: ${modeColor};">${v.mode}</td>
+                    <td>${v.capacity}t</td>
+                    <td>${v.speed_kmh} km/h</td>
+                    <td>${v.max_range} km</td>
+                    <td>${v.home_base}</td>
+                </tr>
+            `}).join('');
+        }
+        
+        function showTab(tabName) {
+            // Update tab buttons
+            document.querySelectorAll('.data-tab').forEach(tab => tab.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            // Show/hide content
+            document.getElementById('tab-convoys').style.display = tabName === 'convoys' ? 'block' : 'none';
+            document.getElementById('tab-destinations').style.display = tabName === 'destinations' ? 'block' : 'none';
+            document.getElementById('tab-vehicles').style.display = tabName === 'vehicles' ? 'block' : 'none';
+        }
+        
+        function updateClock() {
+            const now = new Date();
+            document.getElementById('clock').textContent = now.toLocaleTimeString('en-US', { hour12: false });
+        }
+        
+        function highlightConvoy(index) {
+            if (index === selectedConvoyIndex) {
+                // Clicking same convoy again - show all
+                showAllConvoys();
+                return;
+            }
+            
+            selectedConvoyIndex = index;
+            
+            // Hide all convoy layers except the selected one
+            convoyLayers.forEach((layer, i) => {
+                if (i === index) {
+                    layer.setStyle && layer.setStyle({ opacity: 1 });
+                    map.addLayer(layer);
+                } else {
+                    map.removeLayer(layer);
+                }
+            });
+            
+            // Highlight selected row in table
+            const rows = document.querySelectorAll('#convoy-table-body tr');
+            rows.forEach((row, i) => {
+                if (i === index) {
+                    row.style.background = 'rgba(0, 212, 255, 0.2)';
+                    row.style.borderLeft = '3px solid ' + CONVOY_COLORS[i % CONVOY_COLORS.length];
+                } else {
+                    row.style.background = '';
+                    row.style.borderLeft = '';
+                }
+            });
+            
+            // Fit map to selected convoy route
+            if (currentConvoys[index] && currentConvoys[index].route_coords.length > 0) {
+                const bounds = L.latLngBounds(currentConvoys[index].route_coords);
+                map.fitBounds(bounds, { padding: [50, 50] });
+            }
+        }
+        
+        function showAllConvoys() {
+            selectedConvoyIndex = -1;
+            
+            // Show all convoy layers
+            convoyLayers.forEach(layer => {
+                map.addLayer(layer);
+            });
+            
+            // Remove highlight from all rows
+            const rows = document.querySelectorAll('#convoy-table-body tr');
+            rows.forEach(row => {
+                row.style.background = '';
+                row.style.borderLeft = '';
+            });
+            
+            // Fit map to all points
+            if (supplyPoints.length > 0) {
+                const allCoords = [
+                    ...supplyPoints.map(sp => [sp.lat, sp.lon]),
+                    ...destinations.map(d => [d.lat, d.lon])
+                ];
+                const bounds = L.latLngBounds(allCoords);
+                map.fitBounds(bounds, { padding: [50, 50] });
+            }
+        }
+        
+        function populateSupplyPointDropdown(points) {
+            const select = document.getElementById('supply-point-select');
+            select.innerHTML = points.map(sp => 
+                `<option value="${sp.id}">${sp.id} - ${sp.name} (${sp.country})</option>`
+            ).join('');
+            
+            // Update supply info for first item
+            if (points.length > 0) {
+                updateSupplyInfo();
+            }
+        }
+        
+        function filterSupplyPoints() {
+            const region = document.getElementById('region-select').value;
+            let filtered = supplyPoints;
+            
+            if (region !== 'ALL') {
+                filtered = supplyPoints.filter(sp => sp.region === region);
+            }
+            
+            populateSupplyPointDropdown(filtered);
+            
+            // Zoom to region
+            if (filtered.length > 0) {
+                const bounds = L.latLngBounds(filtered.map(sp => [sp.lat, sp.lon]));
+                map.fitBounds(bounds, { padding: [50, 50] });
+            }
+        }
+        
+        // Zoom-based icon scaling
+        function updateMarkerSizes() {
+            const zoom = map.getZoom();
+            const scale = Math.max(0.3, Math.min(1.5, zoom / 8));
+            
+            // Scale supply markers
+            if (window.supplyMarkers) {
+                window.supplyMarkers.forEach(m => {
+                    if (m.glow._originalRadius) m.glow.setRadius(m.glow._originalRadius * scale);
+                    if (m.main._originalRadius) m.main.setRadius(m.main._originalRadius * scale);
+                });
+            }
+            
+            // Scale destination markers
+            if (window.destinationMarkers) {
+                window.destinationMarkers.forEach(m => {
+                    if (m.glow._originalRadius) m.glow.setRadius(m.glow._originalRadius * scale);
+                    if (m.main._originalRadius) m.main.setRadius(m.main._originalRadius * scale);
+                });
+            }
+        }
+        
+        // Calculate distance between two points (Haversine)
+        function calculateDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371; // Earth's radius in km
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                      Math.sin(dLon/2) * Math.sin(dLon/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return R * c;
+        }
+        
+        // Show shipping options modal for a destination
+        function showShippingOptions(dest) {
+            // Find nearby supply points and calculate shipping times
+            const options = supplyPoints.map(sp => {
+                const distance = calculateDistance(dest.lat, dest.lon, sp.lat, sp.lon);
+                
+                // Calculate times for different transport modes
+                const groundTime = distance / 80; // 80 km/h average
+                const airTime = distance / 500;   // 500 km/h average
+                const waterTime = distance / 40;  // 40 km/h average
+                
+                return {
+                    base: sp,
+                    distance: Math.round(distance),
+                    groundTime: groundTime,
+                    airTime: airTime,
+                    waterTime: waterTime,
+                    canSupply: {
+                        food: sp.food_tons >= dest.food_tons,
+                        ammo: sp.ammo_tons >= dest.ammo_tons,
+                        fuel: sp.fuel_tons >= dest.fuel_tons,
+                        medical: sp.medical_tons >= dest.medical_tons
+                    }
+                };
+            }).sort((a, b) => a.distance - b.distance).slice(0, 10); // Top 10 nearest
+            
+            // Build modal content
+            let modalContent = `
+                <div style="max-height: 60vh; overflow-y: auto;">
+                    <table style="width: 100%; font-size: 11px;">
+                        <thead>
+                            <tr style="color: #888;">
+                                <th style="text-align: left; padding: 8px;">SOURCE BASE</th>
+                                <th style="text-align: left; padding: 8px;">DIST</th>
+                                <th style="text-align: left; padding: 8px;">GROUND</th>
+                                <th style="text-align: left; padding: 8px;">AIR</th>
+                                <th style="text-align: left; padding: 8px;">WATER</th>
+                                <th style="text-align: left; padding: 8px;">SUPPLY OK</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+            
+            options.forEach(opt => {
+                const allSupply = opt.canSupply.food && opt.canSupply.ammo && opt.canSupply.fuel && opt.canSupply.medical;
+                const supplyStatus = allSupply ? '<span style="color: #00ff88;">YES</span>' : '<span style="color: #ffaa00;">PARTIAL</span>';
+                
+                modalContent += `
+                    <tr style="border-bottom: 1px solid rgba(0,212,255,0.2);">
+                        <td style="padding: 8px;">${opt.base.name}<br><span style="color: #888; font-size: 9px;">${opt.base.country}</span></td>
+                        <td style="padding: 8px;">${opt.distance} km</td>
+                        <td style="padding: 8px; color: #00ff88;">${formatTime(opt.groundTime)}</td>
+                        <td style="padding: 8px; color: #00d4ff;">${formatTime(opt.airTime)}</td>
+                        <td style="padding: 8px; color: #00aaff;">${formatTime(opt.waterTime)}</td>
+                        <td style="padding: 8px;">${supplyStatus}</td>
+                    </tr>
+                `;
+            });
+            
+            modalContent += '</tbody></table></div>';
+            
+            // Show modal
+            showModal(`SHIPPING OPTIONS: ${dest.name}`, `
+                <div style="margin-bottom: 15px; padding: 10px; background: rgba(255,51,102,0.1); border: 1px solid #ff3366; border-radius: 4px;">
+                    <b>REQUIRED SUPPLY:</b><br>
+                    FOOD: ${dest.food_tons}t | AMMO: ${dest.ammo_tons}t | FUEL: ${dest.fuel_tons}t | MED: ${dest.medical_tons}t<br>
+                    <b>PRIORITY:</b> <span style="color: ${dest.priority === 'high' ? '#ff3366' : dest.priority === 'medium' ? '#ffaa00' : '#00ff88'};">${dest.priority.toUpperCase()}</span>
+                </div>
+                ${modalContent}
+            `);
+        }
+        
+        function formatTime(hours) {
+            if (hours < 1) {
+                return Math.round(hours * 60) + 'm';
+            } else if (hours < 24) {
+                const h = Math.floor(hours);
+                const m = Math.round((hours - h) * 60);
+                return h + 'h ' + m + 'm';
+            } else {
+                const d = Math.floor(hours / 24);
+                const h = Math.round(hours % 24);
+                return d + 'd ' + h + 'h';
+            }
+        }
+        
+        function showModal(title, content) {
+            // Remove existing modal if any
+            const existing = document.getElementById('info-modal');
+            if (existing) existing.remove();
+            
+            const modal = document.createElement('div');
+            modal.id = 'info-modal';
+            modal.innerHTML = `
+                <div style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); z-index: 2000;" onclick="closeModal()"></div>
+                <div style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); 
+                            background: rgba(0,20,40,0.98); border: 2px solid #00d4ff; border-radius: 8px;
+                            padding: 20px; min-width: 600px; max-width: 80vw; z-index: 2001;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h3 style="margin: 0; color: #00d4ff;">${title}</h3>
+                        <button onclick="closeModal()" style="background: none; border: 1px solid #ff3366; color: #ff3366; padding: 5px 10px; cursor: pointer; border-radius: 4px;">X CLOSE</button>
+                    </div>
+                    ${content}
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+        
+        function closeModal() {
+            const modal = document.getElementById('info-modal');
+            if (modal) modal.remove();
+        }
+    </script>
+</body>
+</html>

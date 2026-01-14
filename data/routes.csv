@@ -1,0 +1,43 @@
+route_id,from_point,to_point,distance_km,road_condition,threat_level,notes
+R001,SP021,D001,15,paved,low,Kadena to FOB Alpha
+R002,SP022,D001,12,paved,low,Camp Foster to FOB Alpha
+R003,SP025,D002,25,paved,low,Yokota to FOB Bravo
+R004,SP026,D002,35,paved,low,Yokosuka to FOB Bravo
+R005,SP031,D003,45,paved,medium,Camp Humphreys to Outpost Charlie
+R006,SP032,D003,38,paved,medium,Osan to Outpost Charlie
+R007,SP031,D004,50,paved,low,Camp Humphreys to FOB Delta
+R008,SP033,D026,25,paved,medium,Kunsan to FOB Zulu
+R009,SP036,D005,20,paved,low,Andersen to Outpost Echo
+R010,SP037,D005,18,paved,low,Naval Base Guam to Outpost Echo
+R011,SP041,D006,30,paved,medium,Antonio Bautista to FOB Foxtrot
+R012,SP039,D007,45,paved,low,Robertson Barracks to Outpost Golf
+R013,SP045,D008,15,paved,low,Ramstein to FOB Hotel
+R014,SP047,D009,20,paved,low,Grafenwohr to Outpost India
+R015,SP051,D010,12,paved,low,NSA Naples to FOB Juliet
+R016,SP055,D011,8,paved,low,RAF Lakenheath to Outpost Kilo
+R017,SP068,D012,15,paved,low,Powidz to FOB Lima
+R018,SP067,D013,18,paved,medium,MK Air Base to Outpost Mike
+R019,SP066,D014,12,paved,low,Bondsteel to FOB November
+R020,SP069,D015,10,paved,low,Al Udeid to Outpost Oscar
+R021,SP070,D016,15,paved,low,Camp Arifjan to FOB Papa
+R022,SP071,D016,22,paved,low,Ali Al Salem to FOB Papa
+R023,SP072,D017,8,paved,low,NSA Bahrain to Outpost Quebec
+R024,SP073,D018,12,paved,low,Al Dhafra to FOB Romeo
+R025,SP075,D019,8,paved,medium,Camp Lemonnier to Outpost Sierra
+R026,SP077,D020,10,paved,low,Soto Cano to FOB Tango
+R027,SP042,D021,15,paved,low,Pearl Harbor to Outpost Uniform
+R028,SP043,D021,20,paved,low,Schofield to Outpost Uniform
+R029,SP079,D022,12,paved,low,JBER to FOB Victor
+R030,SP002,D023,18,paved,low,Fort Cavazos to Outpost Whiskey
+R031,SP015,D024,15,paved,low,Camp Pendleton to FOB Xray
+R032,SP011,D025,20,paved,low,Norfolk to Outpost Yankee
+R033,SP029,D027,12,paved,low,Misawa to Outpost Alpha2
+R034,SP059,D028,10,paved,low,Rota to FOB Bravo2
+R035,SP061,D029,8,paved,low,Souda Bay to Outpost Charlie2
+R036,SP062,D030,15,paved,medium,Incirlik to FOB Delta2
+R037,D001,D002,850,air,low,Inter-Japan air route
+R038,D003,D004,120,paved,medium,Korea internal
+R039,D008,D009,280,paved,low,Germany internal
+R040,D015,D016,450,air,low,Gulf air corridor
+R041,D016,D017,380,air,low,Kuwait-Bahrain air
+R042,D017,D018,420,air,low,Bahrain-UAE air

@@ -1,0 +1,41 @@
+dest_id,dest_name,lat,lon,region,country,food_tons,ammo_tons,fuel_tons,medical_tons,priority,notes
+D001,FOB Alpha Pacific,26.200,127.800,PACIFIC,Japan,3,5,8,2,high,Okinawa forward position
+D002,FOB Bravo Pacific,35.600,139.500,PACIFIC,Japan,4,6,10,2,medium,Tokyo region support
+D003,Outpost Charlie Korea,37.500,127.100,PACIFIC,South Korea,8,12,20,5,high,CRITICAL - DMZ support
+D004,FOB Delta Korea,36.500,127.000,PACIFIC,South Korea,3,5,8,2,medium,Central Korea
+D005,Outpost Echo Guam,13.500,144.800,PACIFIC,Guam,6,10,25,4,high,CRITICAL - Pacific forward
+D006,FOB Foxtrot Philippines,9.900,118.900,PACIFIC,Philippines,2,4,6,1,medium,South China Sea
+D007,Outpost Golf Australia,-12.500,131.000,PACIFIC,Australia,3,4,8,2,low,Darwin area
+D008,FOB Hotel Germany,49.500,7.700,EUROPE,Germany,4,5,10,3,medium,Ramstein support
+D009,Outpost India Germany,49.800,11.800,EUROPE,Germany,3,6,8,2,high,Training area support
+D010,FOB Juliet Italy,40.900,14.300,EUROPE,Italy,3,4,8,2,medium,Naples region
+D011,Outpost Kilo UK,52.500,0.600,EUROPE,UK,2,4,6,1,low,Lakenheath support
+D012,FOB Lima Poland,52.400,17.900,EUROPE,Poland,7,12,18,5,high,CRITICAL - Eastern flank
+D013,Outpost Mike Romania,44.400,28.500,EUROPE,Romania,6,10,15,4,high,CRITICAL - Black Sea region
+D014,FOB November Kosovo,42.400,21.300,EUROPE,Kosovo,4,5,8,3,medium,Balkans support
+D015,Outpost Oscar Qatar,25.200,51.400,MIDEAST,Qatar,8,15,35,6,high,CRITICAL - Al Udeid support
+D016,FOB Papa Kuwait,29.000,48.200,MIDEAST,Kuwait,10,18,40,7,high,CRITICAL - Kuwait operations
+D017,Outpost Quebec Bahrain,26.300,50.700,MIDEAST,Bahrain,3,5,15,2,medium,5th Fleet support
+D018,FOB Romeo UAE,24.300,54.600,MIDEAST,UAE,4,6,18,2,medium,Gulf operations
+D019,Outpost Sierra Djibouti,11.600,43.200,AFRICA,Djibouti,7,10,20,5,high,CRITICAL - Horn of Africa
+D020,FOB Tango Honduras,14.400,-87.700,CENTAM,Honduras,2,3,5,2,low,SOUTHCOM support
+D021,Outpost Uniform Hawaii,21.400,-157.900,PACIFIC,USA,4,6,12,2,medium,Pearl Harbor area
+D022,FOB Victor Alaska,61.300,-149.900,CONUS,USA,3,4,10,2,medium,JBER support
+D023,Outpost Whiskey Texas,31.200,-97.800,CONUS,USA,4,5,8,2,low,Fort Cavazos support
+D024,FOB Xray California,33.400,-117.600,CONUS,USA,5,7,10,3,medium,Pendleton support
+D025,Outpost Yankee Virginia,37.000,-76.400,CONUS,USA,6,10,25,4,high,CRITICAL - Norfolk support
+D026,FOB Zulu Korea,35.950,126.700,PACIFIC,South Korea,5,8,15,3,high,Kunsan support
+D027,Outpost Alpha2 Japan,40.750,141.400,PACIFIC,Japan,2,4,8,1,medium,Misawa support
+D028,FOB Bravo2 Spain,36.700,-6.400,EUROPE,Spain,3,4,12,2,medium,Rota support
+D029,Outpost Charlie2 Greece,35.500,24.200,EUROPE,Greece,2,3,10,1,low,Souda Bay support
+D030,FOB Delta2 Turkey,37.100,35.500,EUROPE,Turkey,6,10,22,4,high,CRITICAL - Incirlik support
+D031,Camp Mercury NC,35.200,-79.100,CONUS,USA,3,4,6,2,high,Fort Liberty support
+D032,FOB Ironhorse TX,31.300,-97.600,CONUS,USA,4,5,8,2,medium,Fort Cavazos area
+D033,Outpost Sentinel GA,32.400,-84.800,CONUS,USA,3,4,5,2,medium,Fort Moore support
+D034,FOB Thunder KY,36.700,-87.500,CONUS,USA,4,6,10,3,high,Fort Campbell support
+D035,Camp Viper GA,31.900,-81.500,CONUS,USA,3,4,8,2,medium,Fort Stewart support
+D036,FOB Mountaineer CO,38.800,-104.700,CONUS,USA,4,5,8,2,medium,Fort Carson support
+D037,Outpost Lonewolf TX,31.900,-106.300,CONUS,USA,3,4,6,2,low,Fort Bliss support
+D038,Camp Iceberg NY,44.100,-75.700,CONUS,USA,4,5,10,3,high,Fort Drum support
+D039,FOB Cascadia WA,47.200,-122.500,CONUS,USA,5,6,12,3,high,JBLM support
+D040,Outpost Tidewater VA,36.900,-76.200,CONUS,USA,4,5,15,2,high,Norfolk naval support
