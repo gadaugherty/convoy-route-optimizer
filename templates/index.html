@@ -654,24 +654,42 @@
             // Find the supply point's region
             const sp = supplyPoints.find(s => s.id === spId);
             if (!sp) return;
-            
+
             // Set region dropdown to match (or ALL if not found)
             const regionSelect = document.getElementById('region-select');
             const regionOptions = Array.from(regionSelect.options).map(o => o.value);
             if (regionOptions.includes(sp.region)) {
                 regionSelect.value = sp.region;
-                filterSupplyPoints();
+                // Filter dropdown but don't zoom to region
+                const filtered = supplyPoints.filter(s => s.region === sp.region);
+                populateSupplyPointDropdown(filtered);
             } else {
                 regionSelect.value = 'ALL';
                 populateSupplyPointDropdown(supplyPoints);
             }
-            
+
             // Set supply point dropdown
             const spSelect = document.getElementById('supply-point-select');
             spSelect.value = spId;
-            
-            // Update the info panel
-            updateSupplyInfo();
+
+            // Update the info panel (without its default pan)
+            document.getElementById('supply-info').innerHTML = `
+                <div style="margin-bottom: 8px;"><b>${sp.name}</b></div>
+                <div style="color: #888; margin-bottom: 8px;">${sp.country} | ${sp.base_type}</div>
+                <div>TROOPS: ${sp.troops.toLocaleString()}</div>
+                <div style="margin-top: 8px; border-top: 1px solid rgba(0,212,255,0.3); padding-top: 8px;">
+                    <div>FOOD: ${sp.food_tons}t</div>
+                    <div>AMMO: ${sp.ammo_tons}t</div>
+                    <div>FUEL: ${sp.fuel_tons}t</div>
+                    <div>MED: ${sp.medical_tons}t</div>
+                </div>
+                <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(0,212,255,0.3);">
+                    <b>Total: ${sp.total_inventory}t</b>
+                </div>
+            `;
+
+            // Zoom IN to the selected point
+            map.setView([sp.lat, sp.lon], 8);
         }
         
         function addDestinationMarkers() {
@@ -724,8 +742,11 @@
                     </div>
                 `, { className: '', direction: 'top', offset: [0, -10] });
                 
-                // Click handler to show shipping options
-                mainMarker.on('click', () => showShippingOptions(dest));
+                // Click handler to zoom in and show shipping options
+                mainMarker.on('click', () => {
+                    map.setView([dest.lat, dest.lon], 8);
+                    showShippingOptions(dest);
+                });
                 
                 // Add glow first (underneath), then main marker on top for clicking
                 markerGroup.addLayer(glowMarker);
