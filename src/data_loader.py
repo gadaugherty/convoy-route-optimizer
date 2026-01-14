@@ -50,6 +50,12 @@ def load_and_clean_supply_points(filepath: str) -> pd.DataFrame:
         df['base_type'] = 'UNKNOWN'
     if 'troops' not in df.columns:
         df['troops'] = 0
+
+    # Handle has_airstrip column (convert yes/no to boolean)
+    if 'has_airstrip' in df.columns:
+        df['has_airstrip'] = df['has_airstrip'].str.lower().str.strip() == 'yes'
+    else:
+        df['has_airstrip'] = False
     
     # Filter to active supply points only
     df = df[df['status'] == 'active'].copy()
@@ -99,7 +105,13 @@ def load_and_clean_destinations(filepath: str) -> pd.DataFrame:
         df['region'] = 'UNKNOWN'
     if 'country' not in df.columns:
         df['country'] = 'UNKNOWN'
-    
+
+    # Handle has_airstrip column (convert yes/no to boolean)
+    if 'has_airstrip' in df.columns:
+        df['has_airstrip'] = df['has_airstrip'].str.lower().str.strip() == 'yes'
+    else:
+        df['has_airstrip'] = False
+
     print(f"Loaded {len(df)} destinations")
     return df
 

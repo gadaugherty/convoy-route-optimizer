@@ -278,13 +278,20 @@ class ConvoyOptimizer:
         """
         capacity = vehicle['capacity_tons']
         max_range = vehicle['max_range_km']
-        
+        vehicle_mode = vehicle.get('mode', 'GROUND')
+
+        # For AIR vehicles, check if supply point has an airstrip
+        if vehicle_mode == 'AIR':
+            sp_match = self.supply_points[self.supply_points['id'] == supply_point_id]
+            if len(sp_match) > 0 and not sp_match.iloc[0].get('has_airstrip', False):
+                return None  # Aircraft cannot depart from location without airstrip
+
         route_sequence = [supply_point_id]
         assigned_destinations = []
         total_distance = 0.0
         total_demand = 0.0
         max_threat_seen = 'low'
-        
+
         current_location = supply_point_id
         remaining = set(destination_ids)
         
@@ -301,9 +308,13 @@ class ConvoyOptimizer:
                 if len(dest_matches) == 0:
                     continue
                 dest_row = dest_matches.iloc[0]
-                
+
+                # For AIR vehicles, skip destinations without airstrips
+                if vehicle_mode == 'AIR' and not dest_row.get('has_airstrip', False):
+                    continue
+
                 demand = self._get_demand(dest_row)
-                
+
                 # Check capacity
                 if total_demand + demand > capacity:
                     continue

@@ -66,7 +66,8 @@ def get_supply_points():
             'ammo_tons': sp.get('ammo_tons', 0),
             'fuel_tons': sp.get('fuel_tons', 0),
             'medical_tons': sp.get('medical_tons', 0),
-            'total_inventory': sp.get('total_inventory_tons', 0)
+            'total_inventory': sp.get('total_inventory_tons', 0),
+            'has_airstrip': bool(sp.get('has_airstrip', False))
         })
     return jsonify(data)
 
@@ -88,7 +89,8 @@ def get_destinations():
             'ammo_tons': dest.get('ammo_tons', 0),
             'fuel_tons': dest.get('fuel_tons', 0),
             'medical_tons': dest.get('medical_tons', 0),
-            'total_demand': dest.get('total_demand_tons', 0)
+            'total_demand': dest.get('total_demand_tons', 0),
+            'has_airstrip': bool(dest.get('has_airstrip', False))
         })
     return jsonify(data)
 

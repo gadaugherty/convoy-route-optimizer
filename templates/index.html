@@ -631,10 +631,13 @@
                 mainMarker._originalRadius = 10;
                 mainMarker.addTo(map);
                 
+                const airStripStatus = sp.has_airstrip ?
+                    '<span style="color: #00ff88;">✈ AIRSTRIP</span>' :
+                    '<span style="color: #888;">NO AIRSTRIP</span>';
                 mainMarker.bindTooltip(`
                     <div style="font-family: monospace; background: rgba(0,20,40,0.95); color: #00d4ff; padding: 10px; border: 1px solid #00d4ff; border-radius: 4px;">
                         <b>[BASE] ${sp.name}</b><br>
-                        <span style="color: #888;">${sp.country} | ${sp.base_type}</span><br>
+                        <span style="color: #888;">${sp.country} | ${sp.base_type}</span> | ${airStripStatus}<br>
                         <span style="color: #888;">━━━━━━━━━━━━</span><br>
                         TROOPS: ${sp.troops.toLocaleString()}<br>
                         FOOD: ${sp.food_tons}t | AMMO: ${sp.ammo_tons}t<br>
@@ -654,24 +657,46 @@
             // Find the supply point's region
             const sp = supplyPoints.find(s => s.id === spId);
             if (!sp) return;
-            
+
             // Set region dropdown to match (or ALL if not found)
             const regionSelect = document.getElementById('region-select');
             const regionOptions = Array.from(regionSelect.options).map(o => o.value);
             if (regionOptions.includes(sp.region)) {
                 regionSelect.value = sp.region;
-                filterSupplyPoints();
+                // Filter dropdown but don't zoom to region
+                const filtered = supplyPoints.filter(s => s.region === sp.region);
+                populateSupplyPointDropdown(filtered);
             } else {
                 regionSelect.value = 'ALL';
                 populateSupplyPointDropdown(supplyPoints);
             }
-            
+
             // Set supply point dropdown
             const spSelect = document.getElementById('supply-point-select');
             spSelect.value = spId;
-            
-            // Update the info panel
-            updateSupplyInfo();
+
+            // Update the info panel (without its default pan)
+            const airStripInfo = sp.has_airstrip ?
+                '<span style="color: #00ff88;">✈ HAS AIRSTRIP</span>' :
+                '<span style="color: #888;">NO AIRSTRIP</span>';
+            document.getElementById('supply-info').innerHTML = `
+                <div style="margin-bottom: 8px;"><b>${sp.name}</b></div>
+                <div style="color: #888; margin-bottom: 8px;">${sp.country} | ${sp.base_type}</div>
+                <div>${airStripInfo}</div>
+                <div>TROOPS: ${sp.troops.toLocaleString()}</div>
+                <div style="margin-top: 8px; border-top: 1px solid rgba(0,212,255,0.3); padding-top: 8px;">
+                    <div>FOOD: ${sp.food_tons}t</div>
+                    <div>AMMO: ${sp.ammo_tons}t</div>
+                    <div>FUEL: ${sp.fuel_tons}t</div>
+                    <div>MED: ${sp.medical_tons}t</div>
+                </div>
+                <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(0,212,255,0.3);">
+                    <b>Total: ${sp.total_inventory}t</b>
+                </div>
+            `;
+
+            // Zoom IN to the selected point
+            map.setView([sp.lat, sp.lon], 8);
         }
         
         function addDestinationMarkers() {
@@ -712,10 +737,13 @@
                 glowMarker._originalRadius = 15;
                 mainMarker._originalRadius = 7;
                 
+                const destAirStripStatus = dest.has_airstrip ?
+                    '<span style="color: #00ff88;">✈ AIRSTRIP</span>' :
+                    '<span style="color: #888;">NO AIRSTRIP</span>';
                 mainMarker.bindTooltip(`
                     <div style="font-family: monospace; background: rgba(0,20,40,0.95); color: ${color}; padding: 10px; border: 1px solid ${color}; border-radius: 4px;">
                         <b>[DEST] ${dest.name}</b><br>
-                        <span style="color: #888;">${dest.country || 'Unknown'}</span><br>
+                        <span style="color: #888;">${dest.country || 'Unknown'}</span> | ${destAirStripStatus}<br>
                         <span style="color: #888;">━━━━━━━━━━━━</span><br>
                         Priority: <b>${dest.priority.toUpperCase()}</b><br>
                         FOOD: ${dest.food_tons}t | AMMO: ${dest.ammo_tons}t<br>
@@ -724,8 +752,11 @@
                     </div>
                 `, { className: '', direction: 'top', offset: [0, -10] });
                 
-                // Click handler to show shipping options
-                mainMarker.on('click', () => showShippingOptions(dest));
+                // Click handler to zoom in and show shipping options
+                mainMarker.on('click', () => {
+                    map.setView([dest.lat, dest.lon], 8);
+                    showShippingOptions(dest);
+                });
                 
                 // Add glow first (underneath), then main marker on top for clicking
                 markerGroup.addLayer(glowMarker);
@@ -915,11 +946,15 @@
         function updateSupplyInfo() {
             const id = document.getElementById('supply-point-select').value;
             const sp = supplyPoints.find(s => s.id === id);
-            
+
             if (sp) {
+                const airStripInfo = sp.has_airstrip ?
+                    '<span style="color: #00ff88;">✈ HAS AIRSTRIP</span>' :
+                    '<span style="color: #888;">NO AIRSTRIP</span>';
                 document.getElementById('supply-info').innerHTML = `
                     <div style="margin-bottom: 8px;"><b>${sp.name}</b></div>
                     <div style="color: #888; margin-bottom: 8px;">${sp.country} | ${sp.base_type}</div>
+                    <div>${airStripInfo}</div>
                     <div>TROOPS: ${sp.troops.toLocaleString()}</div>
                     <div style="margin-top: 8px; border-top: 1px solid rgba(0,212,255,0.3); padding-top: 8px;">
                         <div>FOOD: ${sp.food_tons}t</div>
@@ -931,7 +966,7 @@
                         <b>Total: ${sp.total_inventory}t</b>
                     </div>
                 `;
-                
+
                 // Pan map to supply point
                 map.panTo([sp.lat, sp.lon]);
             }
