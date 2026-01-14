@@ -38,8 +38,8 @@ def load_and_clean_supply_points(filepath: str) -> pd.DataFrame:
         else:
             df[col] = 0
     
-    # Calculate total inventory
-    df['total_inventory_tons'] = sum(df[f'{cat}_tons'] for cat in SUPPLY_CATEGORIES)
+    # Calculate total inventory (row-wise sum across supply categories)
+    df['total_inventory_tons'] = df[[f'{cat}_tons' for cat in SUPPLY_CATEGORIES]].sum(axis=1)
     
     # Handle optional columns
     if 'region' not in df.columns:
@@ -91,8 +91,8 @@ def load_and_clean_destinations(filepath: str) -> pd.DataFrame:
         else:
             df[col] = 0
     
-    # Calculate total demand
-    df['total_demand_tons'] = sum(df[f'{cat}_tons'] for cat in SUPPLY_CATEGORIES)
+    # Calculate total demand (row-wise sum across supply categories)
+    df['total_demand_tons'] = df[[f'{cat}_tons' for cat in SUPPLY_CATEGORIES]].sum(axis=1)
     
     # Handle optional columns
     if 'region' not in df.columns:
