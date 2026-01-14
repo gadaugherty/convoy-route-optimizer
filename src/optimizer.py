@@ -4,7 +4,6 @@ Implements vehicle routing optimization with constraints.
 """
 
 import pandas as pd
-import numpy as np
 from typing import List, Dict, Tuple, Optional, Set
 from dataclasses import dataclass
 
@@ -128,8 +127,12 @@ class ConvoyOptimizer:
                 
                 new_dist = dist + edge_data['distance_km']
                 new_path = path + [neighbor]
-                new_threat = max(max_threat, edge_data['threat_level'], 
-                               key=lambda t: self.threat_threshold.get(t, 0))
+                # Determine the higher threat level by comparing numeric values
+                edge_threat = edge_data['threat_level']
+                if self.threat_threshold.get(edge_threat, 0) > self.threat_threshold.get(max_threat, 0):
+                    new_threat = edge_threat
+                else:
+                    new_threat = max_threat
                 
                 if neighbor == to_id:
                     return new_dist, new_path, new_threat
@@ -292,9 +295,12 @@ class ConvoyOptimizer:
             best_threat = 'low'
             
             for dest_id in remaining:
-                dest_row = self.destinations[
+                dest_matches = self.destinations[
                     self.destinations['dest_id'] == dest_id
-                ].iloc[0]
+                ]
+                if len(dest_matches) == 0:
+                    continue
+                dest_row = dest_matches.iloc[0]
                 
                 demand = self._get_demand(dest_row)
                 
@@ -332,7 +338,7 @@ class ConvoyOptimizer:
             if best_dest is None:
                 break
             
-            # Assign this destination
+            # Assign this destination (we know it exists since best_dest was found above)
             dest_row = self.destinations[
                 self.destinations['dest_id'] == best_dest
             ].iloc[0]
@@ -367,7 +373,15 @@ class ConvoyOptimizer:
         else:
             route_sequence.append(supply_point_id)
         
-        total_distance += dist_back if dist_back != float('inf') else 50.0
+        # If no return path found, estimate using haversine distance
+        if dist_back == float('inf'):
+            current_coords = self._get_coords(current_location)
+            supply_coords = self._get_coords(supply_point_id)
+            if current_coords and supply_coords:
+                dist_back = self._haversine_distance(current_coords, supply_coords)
+            else:
+                dist_back = 0.0  # Can't estimate, assume negligible
+        total_distance += dist_back
         
         if self.threat_threshold.get(threat_back, 0) > self.threat_threshold.get(max_threat_seen, 0):
             max_threat_seen = threat_back

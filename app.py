@@ -172,15 +172,6 @@ def optimize():
             if loc_id in coords:
                 route_coords.append([coords[loc_id]['lat'], coords[loc_id]['lon']])
         
-        # Calculate ETA (assuming 60 km/h)
-        eta_hours = a.total_distance_km / 60
-        if eta_hours < 1:
-            eta_str = f"{int(eta_hours * 60)} min"
-        else:
-            h = int(eta_hours)
-            m = int((eta_hours - h) * 60)
-            eta_str = f"{h}h {m}m"
-        
         # Calculate ETA using actual vehicle speed
         speed = getattr(a, 'speed_kmh', 80)
         eta_hours = a.total_distance_km / speed
@@ -256,7 +247,8 @@ def get_road_route():
                 path = [[c[1], c[0]] for c in coords]
                 return jsonify({'path': path})
     except Exception as e:
-        pass
+        # Log the error for debugging - OSRM service may be unavailable
+        app.logger.warning(f"OSRM routing failed: {e}")
     
     # Fallback to straight line
     return jsonify({'path': [[start_lat, start_lon], [end_lat, end_lon]]})
@@ -270,4 +262,4 @@ if __name__ == '__main__':
     print(f"Open http://localhost:5000 in your browser")
     print("="*60 + "\n")
     
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    app.run(debug=False, host='127.0.0.1', port=5000)
