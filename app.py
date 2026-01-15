@@ -11,10 +11,10 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from src.data_loader import load_all_data
+from src.data_loader import load_all_data, load_shipping_routes, load_all_vehicles
 from src.optimizer import ConvoyOptimizer
 
-app = Flask(__name__, 
+app = Flask(__name__,
     template_folder='templates',
     static_folder='static'
 )
@@ -22,6 +22,8 @@ app = Flask(__name__,
 # Load data globally
 DATA_DIR = 'data'
 supply_points, destinations, vehicles, routes = load_all_data(DATA_DIR)
+shipping_routes = load_shipping_routes(os.path.join(DATA_DIR, 'shipping_routes.csv'))
+all_vehicles = load_all_vehicles(os.path.join(DATA_DIR, 'vehicles.csv'))
 
 # Create optimizer
 optimizer = ConvoyOptimizer(
@@ -67,7 +69,14 @@ def get_supply_points():
             'fuel_tons': sp.get('fuel_tons', 0),
             'medical_tons': sp.get('medical_tons', 0),
             'total_inventory': sp.get('total_inventory_tons', 0),
-            'has_airstrip': bool(sp.get('has_airstrip', False))
+            'has_airstrip': bool(sp.get('has_airstrip', False)),
+            'missiles': {
+                'tomahawk': int(sp.get('tomahawk', 0)),
+                'harpoon': int(sp.get('harpoon', 0)),
+                'sm2': int(sp.get('sm2', 0)),
+                'sm6': int(sp.get('sm6', 0)),
+                'essm': int(sp.get('essm', 0))
+            }
         })
     return jsonify(data)
 
@@ -254,6 +263,72 @@ def get_road_route():
     
     # Fallback to straight line
     return jsonify({'path': [[start_lat, start_lon], [end_lat, end_lon]]})
+
+
+@app.route('/api/active-ships')
+def get_active_ships():
+    """Get all ships currently in transit with their routes."""
+    # Filter to water vehicles in transit
+    transit_ships = all_vehicles[
+        (all_vehicles['mode'] == 'WATER') &
+        (all_vehicles['status'] == 'transit') &
+        (all_vehicles['current_route'] != '')
+    ]
+
+    ships_data = []
+    for _, ship in transit_ships.iterrows():
+        route_id = ship['current_route']
+        # Get waypoints for this route
+        route_waypoints = shipping_routes[shipping_routes['route_id'] == route_id]
+        route_waypoints = route_waypoints.sort_values('waypoint_order')
+
+        waypoints = []
+        for _, wp in route_waypoints.iterrows():
+            waypoints.append({
+                'lat': wp['lat'],
+                'lon': wp['lon'],
+                'description': wp.get('description', '')
+            })
+
+        ships_data.append({
+            'id': ship['vehicle_id'],
+            'name': ship['type'],
+            'ship_class': ship.get('ship_class', ''),
+            'speed_kmh': ship.get('speed_kmh', 30),
+            'capacity': ship['capacity_tons'],
+            'route_id': route_id,
+            'route_name': route_waypoints.iloc[0]['route_name'] if len(route_waypoints) > 0 else route_id,
+            'waypoints': waypoints,
+            'home_base': ship['home_base']
+        })
+
+    return jsonify(ships_data)
+
+
+@app.route('/api/shipping-routes')
+def get_shipping_routes():
+    """Get all shipping route definitions."""
+    routes_dict = {}
+    for _, row in shipping_routes.iterrows():
+        route_id = row['route_id']
+        if route_id not in routes_dict:
+            routes_dict[route_id] = {
+                'id': route_id,
+                'name': row['route_name'],
+                'waypoints': []
+            }
+        routes_dict[route_id]['waypoints'].append({
+            'order': row['waypoint_order'],
+            'lat': row['lat'],
+            'lon': row['lon'],
+            'description': row.get('description', '')
+        })
+
+    # Sort waypoints by order
+    for route in routes_dict.values():
+        route['waypoints'].sort(key=lambda x: x['order'])
+
+    return jsonify(list(routes_dict.values()))
 
 
 if __name__ == '__main__':

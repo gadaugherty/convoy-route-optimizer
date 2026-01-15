@@ -524,17 +524,28 @@
         let routeNetworkLayer;
         let currentConvoys = [];  // Store convoy data for highlighting
         let selectedConvoyIndex = -1;  // Track selected convoy
-        
+        let activeShips = [];  // Ships currently in transit
+        let shipMarkers = {};  // Map of ship ID to marker
+        let shipAnimationInterval = null;
+
         const CONVOY_COLORS = ['#00d4ff', '#ff00ff', '#00ff88', '#ffaa00', '#ff3366', '#aa88ff', '#00ffcc', '#ff6600'];
         const THREAT_COLORS = { low: '#00ff88', medium: '#ffaa00', high: '#ff3366' };
+        const SHIP_COLORS = {
+            'cargo': '#00ffcc',
+            'oiler': '#ffcc00',
+            'container': '#ff9900'
+        };
         
         // Initialize
         document.addEventListener('DOMContentLoaded', async () => {
             initMap();
             await loadData();
+            await loadActiveShips();
             document.getElementById('loading').classList.add('hidden');
             updateClock();
             setInterval(updateClock, 1000);
+            // Start ship animation
+            startShipAnimation();
         });
         
         function initMap() {
@@ -601,7 +612,113 @@
                 console.error('Error loading data:', error);
             }
         }
-        
+
+        async function loadActiveShips() {
+            try {
+                const response = await fetch('/api/active-ships');
+                activeShips = await response.json();
+                console.log(`Loaded ${activeShips.length} active ships`);
+
+                // Create markers for each ship
+                activeShips.forEach(ship => {
+                    if (ship.waypoints && ship.waypoints.length > 0) {
+                        // Initialize ship at a random position along its route
+                        ship.currentWaypointIndex = 0;
+                        ship.progress = Math.random(); // Random start position
+                        ship.direction = 1; // 1 = forward, -1 = reverse
+
+                        const color = SHIP_COLORS[ship.ship_class] || '#00ffcc';
+
+                        // Create ship marker (triangle shape pointing in direction of travel)
+                        const marker = L.circleMarker([ship.waypoints[0].lat, ship.waypoints[0].lon], {
+                            radius: 5,
+                            color: color,
+                            fillColor: color,
+                            fillOpacity: 0.9,
+                            weight: 2
+                        });
+
+                        marker.bindTooltip(`
+                            <div style="font-family: monospace; background: rgba(0,20,40,0.95); color: ${color}; padding: 8px; border: 1px solid ${color}; border-radius: 4px;">
+                                <b>⚓ ${ship.name}</b><br>
+                                <span style="color: #888;">Class: ${ship.ship_class.toUpperCase()}</span><br>
+                                <span style="color: #888;">━━━━━━━━━━━━</span><br>
+                                Route: ${ship.route_name}<br>
+                                Speed: ${ship.speed_kmh} km/h<br>
+                                Capacity: ${ship.capacity.toLocaleString()}t
+                            </div>
+                        `, { className: '', direction: 'top', offset: [0, -8] });
+
+                        marker.addTo(map);
+                        shipMarkers[ship.id] = marker;
+
+                        // Draw route line (faint)
+                        const routeCoords = ship.waypoints.map(wp => [wp.lat, wp.lon]);
+                        L.polyline(routeCoords, {
+                            color: color,
+                            weight: 1,
+                            opacity: 0.2,
+                            dashArray: '5, 10',
+                            interactive: false
+                        }).addTo(map);
+                    }
+                });
+            } catch (error) {
+                console.error('Error loading active ships:', error);
+            }
+        }
+
+        function startShipAnimation() {
+            // Update ship positions every 100ms for smooth animation
+            shipAnimationInterval = setInterval(() => {
+                activeShips.forEach(ship => {
+                    if (!ship.waypoints || ship.waypoints.length < 2) return;
+
+                    const marker = shipMarkers[ship.id];
+                    if (!marker) return;
+
+                    // Get current and next waypoint
+                    const currentIdx = ship.currentWaypointIndex;
+                    const nextIdx = currentIdx + ship.direction;
+
+                    if (nextIdx < 0 || nextIdx >= ship.waypoints.length) {
+                        // Reverse direction at ends
+                        ship.direction *= -1;
+                        return;
+                    }
+
+                    const current = ship.waypoints[currentIdx];
+                    const next = ship.waypoints[nextIdx];
+
+                    // Interpolate position
+                    const lat = current.lat + (next.lat - current.lat) * ship.progress;
+                    const lon = current.lon + (next.lon - current.lon) * ship.progress;
+
+                    marker.setLatLng([lat, lon]);
+
+                    // Advance progress (speed based on ship speed, scaled for animation)
+                    // Slower ships move slower on the map
+                    const speedFactor = ship.speed_kmh / 1000; // Normalize speed
+                    ship.progress += speedFactor * 0.02;
+
+                    // Move to next segment when progress reaches 1
+                    if (ship.progress >= 1) {
+                        ship.progress = 0;
+                        ship.currentWaypointIndex += ship.direction;
+
+                        // Check bounds
+                        if (ship.currentWaypointIndex < 0) {
+                            ship.currentWaypointIndex = 0;
+                            ship.direction = 1;
+                        } else if (ship.currentWaypointIndex >= ship.waypoints.length - 1) {
+                            ship.currentWaypointIndex = ship.waypoints.length - 2;
+                            ship.direction = -1;
+                        }
+                    }
+                });
+            }, 100);
+        }
+
         function addSupplyPointMarkers() {
             window.supplyMarkers = [];
             

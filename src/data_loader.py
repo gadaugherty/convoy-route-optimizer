@@ -56,7 +56,15 @@ def load_and_clean_supply_points(filepath: str) -> pd.DataFrame:
         df['has_airstrip'] = df['has_airstrip'].str.lower().str.strip() == 'yes'
     else:
         df['has_airstrip'] = False
-    
+
+    # Handle missile inventory columns
+    missile_types = ['tomahawk', 'harpoon', 'sm2', 'sm6', 'essm']
+    for missile in missile_types:
+        if missile in df.columns:
+            df[missile] = pd.to_numeric(df[missile], errors='coerce').fillna(0).astype(int)
+        else:
+            df[missile] = 0
+
     # Filter to active supply points only
     df = df[df['status'] == 'active'].copy()
     df = df.reset_index(drop=True)
@@ -148,12 +156,32 @@ def load_and_clean_vehicles(filepath: str) -> pd.DataFrame:
     for mode, default_range in range_defaults.items():
         mask = (df['mode'] == mode) & (df['max_range_km'].isna())
         df.loc[mask, 'max_range_km'] = default_range
-    
-    # Filter to available vehicles only
+
+    # Handle ship-specific columns
+    if 'vls_cells' in df.columns:
+        df['vls_cells'] = pd.to_numeric(df['vls_cells'], errors='coerce').fillna(0).astype(int)
+    else:
+        df['vls_cells'] = 0
+
+    if 'ship_class' not in df.columns:
+        df['ship_class'] = ''
+    df['ship_class'] = df['ship_class'].fillna('')
+
+    if 'current_route' not in df.columns:
+        df['current_route'] = ''
+    df['current_route'] = df['current_route'].fillna('')
+
+    if 'missile_reload_port' not in df.columns:
+        df['missile_reload_port'] = ''
+    df['missile_reload_port'] = df['missile_reload_port'].fillna('')
+
+    # Filter to available vehicles only (for optimization)
+    # Keep all vehicles in a separate copy for display
+    all_vehicles = df.copy()
     df = df[df['status'] == 'available'].copy()
     df = df.reset_index(drop=True)
-    
-    print(f"Loaded {len(df)} available vehicles")
+
+    print(f"Loaded {len(df)} available vehicles ({len(all_vehicles)} total)")
     return df
 
 
@@ -162,26 +190,67 @@ def load_and_clean_routes(filepath: str) -> pd.DataFrame:
     Load and clean route/road network data.
     """
     df = pd.read_csv(filepath)
-    
+
     # Normalize column names
     df.columns = df.columns.str.lower().str.strip()
-    
+
     # Normalize threat levels
     df['threat_level'] = df['threat_level'].fillna('medium')
     df['threat_level'] = df['threat_level'].str.lower().str.strip()
-    
+
     # Map threat to numeric cost multiplier
     threat_cost = {'low': 1.0, 'medium': 1.5, 'high': 2.5}
     df['threat_multiplier'] = df['threat_level'].map(threat_cost).fillna(1.5)
-    
+
     # Fill missing road conditions
     df['road_condition'] = df['road_condition'].fillna('unknown')
     df['road_condition'] = df['road_condition'].str.lower()
-    
+
     # Calculate effective distance
     df['effective_distance'] = df['distance_km'] * df['threat_multiplier']
-    
+
     print(f"Loaded {len(df)} route segments")
+    return df
+
+
+def load_shipping_routes(filepath: str) -> pd.DataFrame:
+    """
+    Load shipping routes with waypoints for sea transport visualization.
+    """
+    df = pd.read_csv(filepath)
+    df.columns = df.columns.str.lower().str.strip()
+    print(f"Loaded {len(df)} shipping route waypoints")
+    return df
+
+
+def load_all_vehicles(filepath: str) -> pd.DataFrame:
+    """
+    Load ALL vehicles including those in transit (for display purposes).
+    """
+    df = pd.read_csv(filepath)
+    df.columns = df.columns.str.lower().str.strip()
+    df['status'] = df['status'].str.lower().str.strip()
+    df['type'] = df['type'].str.upper()
+
+    if 'mode' in df.columns:
+        df['mode'] = df['mode'].str.upper().str.strip()
+    else:
+        df['mode'] = 'GROUND'
+
+    # Handle ship-specific columns
+    if 'vls_cells' in df.columns:
+        df['vls_cells'] = pd.to_numeric(df['vls_cells'], errors='coerce').fillna(0).astype(int)
+    else:
+        df['vls_cells'] = 0
+
+    if 'ship_class' not in df.columns:
+        df['ship_class'] = ''
+    df['ship_class'] = df['ship_class'].fillna('')
+
+    if 'current_route' not in df.columns:
+        df['current_route'] = ''
+    df['current_route'] = df['current_route'].fillna('')
+
     return df
 
 

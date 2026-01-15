@@ -1,0 +1,50 @@
+route_id,route_name,waypoint_order,lat,lon,description
+ATLANTIC-MED,Atlantic to Mediterranean,1,36.946,-76.303,Norfolk departure
+ATLANTIC-MED,Atlantic to Mediterranean,2,36.5,-70.0,Atlantic waypoint 1
+ATLANTIC-MED,Atlantic to Mediterranean,3,36.0,-50.0,Mid-Atlantic
+ATLANTIC-MED,Atlantic to Mediterranean,4,36.0,-20.0,Eastern Atlantic
+ATLANTIC-MED,Atlantic to Mediterranean,5,36.0,-10.0,Strait approach
+ATLANTIC-MED,Atlantic to Mediterranean,6,36.642,-6.350,Rota Spain
+ATLANTIC-MED,Atlantic to Mediterranean,7,36.5,0.0,Western Med
+ATLANTIC-MED,Atlantic to Mediterranean,8,37.402,14.922,Sigonella
+ATLANTIC-MED,Atlantic to Mediterranean,9,40.820,14.195,Naples
+ATLANTIC-NORTH,North Atlantic Route,1,36.946,-76.303,Norfolk departure
+ATLANTIC-NORTH,North Atlantic Route,2,40.0,-70.0,North Atlantic 1
+ATLANTIC-NORTH,North Atlantic Route,3,45.0,-50.0,North Atlantic 2
+ATLANTIC-NORTH,North Atlantic Route,4,50.0,-30.0,North Atlantic 3
+ATLANTIC-NORTH,North Atlantic Route,5,55.0,-20.0,Approaching UK
+ATLANTIC-NORTH,North Atlantic Route,6,52.409,0.561,UK waters
+ATLANTIC-NORTH,North Atlantic Route,7,63.985,-22.606,Keflavik Iceland
+MED-EAST,Eastern Mediterranean,1,36.642,-6.350,Rota departure
+MED-EAST,Eastern Mediterranean,2,36.5,5.0,Western Med
+MED-EAST,Eastern Mediterranean,3,35.5,15.0,Central Med
+MED-EAST,Eastern Mediterranean,4,35.486,24.126,Souda Bay
+MED-EAST,Eastern Mediterranean,5,34.0,32.0,Eastern Med
+MED-EAST,Eastern Mediterranean,6,31.5,32.5,Suez approach
+MED-EAST,Eastern Mediterranean,7,27.0,34.0,Red Sea north
+MED-EAST,Eastern Mediterranean,8,20.0,38.5,Red Sea south
+MED-EAST,Eastern Mediterranean,9,12.5,43.5,Gulf of Aden
+MED-EAST,Eastern Mediterranean,10,26.217,50.599,Bahrain
+PACIFIC-WEST,Western Pacific,1,32.683,-117.146,San Diego departure
+PACIFIC-WEST,Western Pacific,2,30.0,-130.0,Eastern Pacific
+PACIFIC-WEST,Western Pacific,3,28.0,-150.0,Central Pacific
+PACIFIC-WEST,Western Pacific,4,25.0,-170.0,Western Pacific approach
+PACIFIC-WEST,Western Pacific,5,26.352,127.769,Okinawa
+PACIFIC-WEST,Western Pacific,6,35.289,139.662,Yokosuka
+PACIFIC-WEST,Western Pacific,7,33.159,129.715,Sasebo
+PACIFIC-EAST,Eastern Pacific,1,21.347,-157.939,Pearl Harbor departure
+PACIFIC-EAST,Eastern Pacific,2,20.0,-140.0,Central Pacific
+PACIFIC-EAST,Eastern Pacific,3,25.0,-120.0,Eastern Pacific
+PACIFIC-EAST,Eastern Pacific,4,32.683,-117.146,San Diego
+PACIFIC-SOUTH,South Pacific,1,13.444,144.656,Guam departure
+PACIFIC-SOUTH,South Pacific,2,5.0,145.0,Western Pacific south
+PACIFIC-SOUTH,South Pacific,3,-5.0,140.0,Near equator
+PACIFIC-SOUTH,South Pacific,4,-12.453,130.887,Darwin Australia
+ARABIAN-GULF,Arabian Gulf Route,1,26.217,50.599,Bahrain departure
+ARABIAN-GULF,Arabian Gulf Route,2,26.5,52.0,Gulf waters
+ARABIAN-GULF,Arabian Gulf Route,3,25.0,55.0,UAE approach
+ARABIAN-GULF,Arabian Gulf Route,4,24.248,54.547,Near Al Dhafra
+ARABIAN-GULF,Arabian Gulf Route,5,23.5,58.0,Gulf of Oman
+ARABIAN-GULF,Arabian Gulf Route,6,20.0,60.0,Arabian Sea
+ARABIAN-GULF,Arabian Gulf Route,7,12.0,45.0,Gulf of Aden
+ARABIAN-GULF,Arabian Gulf Route,8,11.548,43.159,Djibouti
