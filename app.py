@@ -19,6 +19,9 @@ app = Flask(__name__,
     static_folder='static'
 )
 
+app.config['TEMPLATES_AUTO_RELOAD'] = True
+app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0 
+
 # Load data globally
 DATA_DIR = 'data'
 supply_points, destinations, vehicles, routes = load_all_data(DATA_DIR)
@@ -264,4 +267,4 @@ if __name__ == '__main__':
     print(f"Open http://localhost:5000 in your browser")
     print("="*60 + "\n")
     
-    app.run(debug=False, host='127.0.0.1', port=5000)
+    app.run(debug=True, host='127.0.0.1', port=5000)
