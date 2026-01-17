@@ -71,3 +71,12 @@ convoy-routes/
 └── templates/
     └── index.html
 ```
+## Roadmap
+
+- **Naval Fleet Integration**: Add US cargo ships and military vessels with realistic sea routes, port logistics, and maritime constraints
+- **Live Simulation Mode**: Real-time animated convoys showing active routes with progress tracking and ETA updates
+- **Dynamic Threat Zones**: Time-varying threat levels that influence route recalculation mid-mission
+- **Multi-Leg Journeys**: Support for convoy handoffs between transport modes (e.g., air to ground, sea to ground)
+- **Supply Chain Analytics**: Dashboard showing delivery metrics, fleet utilization, and bottleneck identification
+- **Weather Integration**: Route adjustments based on real-time weather conditions affecting vehicle capabilities
+- **Port to PyQt**: Port to PyQt + folium or tkintermapview to not depend on browser
