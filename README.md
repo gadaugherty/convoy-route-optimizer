@@ -7,7 +7,7 @@ A military logistics routing system that optimizes supply delivery across global
 
 ## What It Does
 
-Solves constrained vehicle routing for military operations: given supply points, priority destinations, and a mixed fleet—find optimal routes considering capacity limits, vehicle range, and threat zone avoidance.
+Solves constrained vehicle routing for military operations: given supply points, priority destinations, and a mixed fleet, find optimal routes considering capacity limits, vehicle range, and threat zone avoidance.
 ![Alt Text](media/2.gif)
 
 ## Features
