@@ -3,7 +3,7 @@
 [![GitHub](https://img.shields.io/badge/github-convoy--routes-blue?logo=github)](https://github.com/gadaugherty/convoy-routes)
 
 A military logistics routing system that optimizes supply delivery across global bases while respecting vehicle constraints, range limitations, and threat levels.
-
+![Alt Text](media/5.png)
 ## What It Does
 
 Solves constrained vehicle routing for military operations: given supply points, priority destinations, and a mixed fleet—find optimal routes considering capacity limits, vehicle range, and threat zone avoidance.
@@ -16,7 +16,7 @@ Solves constrained vehicle routing for military operations: given supply points,
 - **Priority-Based Routing**: Critical destinations pulse with red glow; high-priority deliveries scheduled first
 - **Shipping Time Estimates**: Click any destination to see delivery times via available transport modes
 - **Route Visualization**: Clickable convoy routes displayed on map after optimization
-- 
+  
 ![Alt Text](media/1.gif)
 
 ## Tech Stack
