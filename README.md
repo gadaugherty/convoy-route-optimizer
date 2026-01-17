@@ -4,14 +4,17 @@
 
 A military logistics routing system that optimizes supply delivery across global bases while respecting vehicle constraints, range limitations, and threat levels.
 ![Alt Text](media/5.png)
+
 ## What It Does
 
 Solves constrained vehicle routing for military operations: given supply points, priority destinations, and a mixed fleet—find optimal routes considering capacity limits, vehicle range, and threat zone avoidance.
+![Alt Text](media/2.gif)
 
 ## Features
 
 - **Interactive Tactical Map**: Dark-themed Leaflet map with zoom-responsive icons and clickable supply points
 - **Real Base Data**: 85 US military installations worldwide across 5 regions (CONUS, PACIFIC, EUROPE, MIDEAST, AFRICA)
+  ![Alt Text](media/4.png)
 - **Multi-Modal Transport**: Ground vehicles, aircraft, and watercraft with realistic range/capacity specs
 - **Priority-Based Routing**: Critical destinations pulse with red glow; high-priority deliveries scheduled first
 - **Shipping Time Estimates**: Click any destination to see delivery times via available transport modes
