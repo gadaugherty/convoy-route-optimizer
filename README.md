@@ -1,5 +1,7 @@
 # Convoy Route Optimizer
 
+[![GitHub](https://img.shields.io/badge/github-convoy--routes-blue?logo=github)](https://github.com/gadaugherty/convoy-routes)
+
 A military logistics routing system that optimizes supply delivery across global bases while respecting vehicle constraints, range limitations, and threat levels.
 
 ## What It Does
@@ -42,13 +44,17 @@ Then open `http://localhost:5000` in your browser.
 
 ```
 convoy-routes/
-├── app.py              # Flask application
-├── optimizer.py        # ConvoyOptimizer class with routing logic
+├── app.py                  # Flask application
+├── requirements.txt
 ├── data/
-│   └── bases.csv       # 85 military bases with coordinates, region, inventory
-├── static/
-│   ├── css/
-│   └── js/
+│   ├── destinations.csv
+│   ├── routes.csv
+│   ├── supply_points.csv
+│   └── vehicles.csv
+├── src/
+│   ├── __init__.py
+│   ├── data_loader.py
+│   └── optimizer.py
 └── templates/
-    └── index.html      # Main map interface
+    └── index.html
 ```
