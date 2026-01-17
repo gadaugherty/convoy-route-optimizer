@@ -13,7 +13,7 @@ Solves constrained vehicle routing for military operations: given supply points,
 ## Features
 
 - **Interactive Tactical Map**: Dark-themed Leaflet map with zoom-responsive icons and clickable supply points
-  ![Alt Text](media/4.png)
+  ![Alt Text](media/3.png)
   
 - **Real Base Data**: 85 US military installations worldwide across 5 regions (CONUS, PACIFIC, EUROPE, MIDEAST, AFRICA)
 - **Multi-Modal Transport**: Ground vehicles, aircraft, and watercraft with realistic range/capacity specs
