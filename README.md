@@ -31,6 +31,8 @@ Solves constrained vehicle routing for military operations: given supply points,
 pip install flask pandas
 python app.py
 ```
+![til](https://raw.githubusercontent.com/gadaugherty/convoy-routes/media/1.gif)
+
 
 Then open `http://localhost:5000` in your browser.
 
