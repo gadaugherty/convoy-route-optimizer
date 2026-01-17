@@ -13,14 +13,16 @@ Solves constrained vehicle routing for military operations: given supply points,
 ## Features
 
 - **Interactive Tactical Map**: Dark-themed Leaflet map with zoom-responsive icons and clickable supply points
-- **Real Base Data**: 85 US military installations worldwide across 5 regions (CONUS, PACIFIC, EUROPE, MIDEAST, AFRICA)
   ![Alt Text](media/4.png)
+- **Real Base Data**: 85 US military installations worldwide across 5 regions (CONUS, PACIFIC, EUROPE, MIDEAST, AFRICA)
 - **Multi-Modal Transport**: Ground vehicles, aircraft, and watercraft with realistic range/capacity specs
 - **Priority-Based Routing**: Critical destinations pulse with red glow; high-priority deliveries scheduled first
+  ![Alt Text](media/1.gif)
 - **Shipping Time Estimates**: Click any destination to see delivery times via available transport modes
 - **Route Visualization**: Clickable convoy routes displayed on map after optimization
+  ![Alt Text](media/4.png)
   
-![Alt Text](media/1.gif)
+
 
 ## Tech Stack
 
