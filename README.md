@@ -1,5 +1,5 @@
 # Convoy Route Optimizer
-
+![GitHub](https://github.com/gadaugherty/convoy-routes/media/1.gif)
 [![GitHub](https://img.shields.io/badge/github-convoy--routes-blue?logo=github)](https://github.com/gadaugherty/convoy-routes)
 
 A military logistics routing system that optimizes supply delivery across global bases while respecting vehicle constraints, range limitations, and threat levels.
