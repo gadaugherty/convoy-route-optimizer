@@ -310,6 +310,40 @@
         .convoy-3 { color: #00ff88; }
         .convoy-4 { color: #ffaa00; }
         .convoy-5 { color: #ff3366; }
+
+        /* Animated convoy marker styles */
+        .convoy-vehicle-marker {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            font-size: 16px;
+            text-shadow: 0 0 8px currentColor;
+        }
+
+        .convoy-vehicle-ground {
+            background: radial-gradient(circle, rgba(0,255,136,0.9) 0%, rgba(0,255,136,0.3) 50%, transparent 70%);
+            box-shadow: 0 0 15px #00ff88, 0 0 30px rgba(0,255,136,0.5);
+        }
+
+        .convoy-vehicle-air {
+            background: radial-gradient(circle, rgba(0,212,255,0.9) 0%, rgba(0,212,255,0.3) 50%, transparent 70%);
+            box-shadow: 0 0 15px #00d4ff, 0 0 30px rgba(0,212,255,0.5);
+        }
+
+        .convoy-vehicle-water {
+            background: radial-gradient(circle, rgba(0,170,255,0.9) 0%, rgba(0,170,255,0.3) 50%, transparent 70%);
+            box-shadow: 0 0 15px #00aaff, 0 0 30px rgba(0,170,255,0.5);
+        }
+
+        @keyframes convoy-move-pulse {
+            0%, 100% { transform: scale(1); filter: brightness(1); }
+            50% { transform: scale(1.15); filter: brightness(1.3); }
+        }
+
+        .convoy-vehicle-active {
+            animation: convoy-move-pulse 0.8s ease-in-out infinite;
+        }
         
         /* Scrollbar */
         ::-webkit-scrollbar {
@@ -413,7 +447,40 @@
                 X CLEAR CONVOYS
             </button>
         </div>
-        
+
+        <div class="panel-section">
+            <div class="panel-title">// SIMULATION CONTROL</div>
+
+            <button id="start-sim-btn" class="primary" onclick="startSimulation()">
+                > START SIMULATION
+            </button>
+
+            <button id="pause-sim-btn" onclick="pauseSimulation()" style="display: none;">
+                || PAUSE
+            </button>
+
+            <button onclick="resetSimulation()">
+                RESET POSITIONS
+            </button>
+
+            <label style="font-size: 11px; display: block; margin-top: 10px;">Speed Multiplier:</label>
+            <select id="speed-multiplier" onchange="updateSpeedMultiplier()">
+                <option value="1">1x (Real-time)</option>
+                <option value="10">10x</option>
+                <option value="60" selected>60x (1 min = 1 sec)</option>
+                <option value="300">300x</option>
+                <option value="3600">3600x (1 hr = 1 sec)</option>
+            </select>
+
+            <div id="sim-status" style="margin-top: 10px; font-size: 11px; color: #888;">
+                Status: STOPPED
+            </div>
+
+            <button onclick="launchFortLibertyTest()" style="margin-top: 10px; background: rgba(255,136,0,0.2); border-color: #ff8800; color: #ff8800;">
+                DEMO: FORT LIBERTY
+            </button>
+        </div>
+
         <div class="panel-section">
             <div class="panel-title">// MISSION STATS</div>
             <div class="stats-grid">
@@ -870,7 +937,10 @@
                     // AIR or WATER - use straight lines
                     fullPath = convoy.route_coords;
                 }
-                
+
+                // Store full path for animation
+                convoy.animationPath = fullPath;
+
                 // Draw glow layers
                 L.polyline(fullPath, { weight: 14, color: color, opacity: 0.15 }).addTo(layerGroup);
                 L.polyline(fullPath, { weight: 8, color: color, opacity: 0.3 }).addTo(layerGroup);
@@ -1266,6 +1336,321 @@
         function closeModal() {
             const modal = document.getElementById('info-modal');
             if (modal) modal.remove();
+        }
+
+        // ================== CONVOY ANIMATION SYSTEM ==================
+
+        // Animation state
+        let animationState = {
+            isRunning: false,
+            isPaused: false,
+            startTime: null,
+            speedMultiplier: 60,
+            animatedConvoys: [],
+            animationFrameId: null
+        };
+
+        // Vehicle icons by mode
+        const VEHICLE_ICONS = {
+            GROUND: { symbol: '●', size: 20, class: 'convoy-vehicle-ground' },
+            AIR: { symbol: '▲', size: 20, class: 'convoy-vehicle-air' },
+            WATER: { symbol: '◆', size: 20, class: 'convoy-vehicle-water' }
+        };
+
+        class AnimatedConvoy {
+            constructor(convoyData, routePath, color) {
+                this.id = convoyData.id;
+                this.vehicleId = convoyData.vehicle_id;
+                this.vehicleType = convoyData.vehicle_type;
+                this.mode = convoyData.mode || 'GROUND';
+                this.speedKmh = convoyData.speed_kmh || 80;
+                this.routePath = routePath;
+                this.totalDistanceKm = convoyData.total_distance_km;
+                this.destinations = convoyData.destinations;
+                this.color = color;
+
+                // Animation state
+                this.progress = 0.0;
+                this.currentPosition = routePath[0];
+                this.status = 'waiting';
+
+                // Pre-calculate segment distances
+                this.segmentDistances = [];
+                this.cumulativeDistances = [0];
+                let totalDist = 0;
+
+                for (let i = 0; i < routePath.length - 1; i++) {
+                    const dist = calculateDistance(
+                        routePath[i][0], routePath[i][1],
+                        routePath[i + 1][0], routePath[i + 1][1]
+                    );
+                    this.segmentDistances.push(dist);
+                    totalDist += dist;
+                    this.cumulativeDistances.push(totalDist);
+                }
+
+                this.calculatedTotalDistance = totalDist || 1;
+                this.marker = null;
+            }
+
+            createMarker() {
+                const iconConfig = VEHICLE_ICONS[this.mode] || VEHICLE_ICONS.GROUND;
+                const size = iconConfig.size;
+
+                this.marker = L.marker(this.currentPosition, {
+                    icon: L.divIcon({
+                        html: `<div class="convoy-vehicle-marker ${iconConfig.class} convoy-vehicle-active"
+                                    style="width: ${size}px; height: ${size}px; color: ${this.color};">
+                                 ${iconConfig.symbol}
+                               </div>`,
+                        iconSize: [size, size],
+                        iconAnchor: [size / 2, size / 2],
+                        className: ''
+                    }),
+                    zIndexOffset: 1000
+                });
+
+                this.marker.bindTooltip(`
+                    <div style="font-family: monospace; background: rgba(0,20,40,0.95); color: ${this.color}; padding: 8px; border: 1px solid ${this.color}; border-radius: 4px;">
+                        <b>CONVOY ${this.id}</b><br>
+                        ${this.vehicleId} (${this.vehicleType})<br>
+                        Mode: ${this.mode} | ${this.speedKmh} km/h<br>
+                        Progress: <span class="convoy-progress-${this.id}">0</span>%
+                    </div>
+                `, { permanent: false, direction: 'top', offset: [0, -20] });
+
+                return this.marker;
+            }
+
+            updatePosition(elapsedTimeHours) {
+                const distanceTraveled = this.speedKmh * elapsedTimeHours;
+                this.progress = Math.min(1.0, distanceTraveled / this.calculatedTotalDistance);
+
+                if (this.progress >= 1.0) {
+                    this.currentPosition = this.routePath[this.routePath.length - 1];
+                    this.status = 'arrived';
+                    if (this.marker) {
+                        this.marker.setLatLng(this.currentPosition);
+                    }
+                    return;
+                }
+
+                this.status = 'moving';
+
+                // Find current segment
+                const targetDistance = this.progress * this.calculatedTotalDistance;
+                let segmentIndex = 0;
+
+                for (let i = 0; i < this.cumulativeDistances.length - 1; i++) {
+                    if (targetDistance >= this.cumulativeDistances[i] &&
+                        targetDistance < this.cumulativeDistances[i + 1]) {
+                        segmentIndex = i;
+                        break;
+                    }
+                }
+
+                // Interpolate within segment
+                const segmentStart = this.cumulativeDistances[segmentIndex];
+                const segmentLength = this.segmentDistances[segmentIndex] || 1;
+                const segmentProgress = (targetDistance - segmentStart) / segmentLength;
+
+                const startPoint = this.routePath[segmentIndex];
+                const endPoint = this.routePath[segmentIndex + 1] || startPoint;
+
+                this.currentPosition = [
+                    startPoint[0] + (endPoint[0] - startPoint[0]) * segmentProgress,
+                    startPoint[1] + (endPoint[1] - startPoint[1]) * segmentProgress
+                ];
+
+                if (this.marker) {
+                    this.marker.setLatLng(this.currentPosition);
+                }
+            }
+        }
+
+        function initializeAnimation() {
+            // Clear existing animated convoys
+            animationState.animatedConvoys.forEach(ac => {
+                if (ac.marker) map.removeLayer(ac.marker);
+            });
+            animationState.animatedConvoys = [];
+
+            if (currentConvoys.length === 0) {
+                alert('No convoys to animate. Run optimization first.');
+                return false;
+            }
+
+            // Create AnimatedConvoy for each convoy
+            currentConvoys.forEach((convoy, i) => {
+                const color = CONVOY_COLORS[i % CONVOY_COLORS.length];
+                const routePath = convoy.animationPath || convoy.route_coords;
+
+                if (routePath && routePath.length >= 2) {
+                    const animatedConvoy = new AnimatedConvoy(convoy, routePath, color);
+                    animatedConvoy.createMarker().addTo(map);
+                    animationState.animatedConvoys.push(animatedConvoy);
+                }
+            });
+
+            return animationState.animatedConvoys.length > 0;
+        }
+
+        function startSimulation() {
+            if (animationState.isRunning && !animationState.isPaused) {
+                return;
+            }
+
+            if (!animationState.isPaused) {
+                if (!initializeAnimation()) {
+                    return;
+                }
+                animationState.startTime = performance.now();
+            }
+
+            animationState.isRunning = true;
+            animationState.isPaused = false;
+
+            document.getElementById('start-sim-btn').style.display = 'none';
+            document.getElementById('pause-sim-btn').style.display = 'block';
+            document.getElementById('sim-status').textContent = 'Status: RUNNING';
+            document.getElementById('sim-status').style.color = '#00ff88';
+
+            animationLoop();
+        }
+
+        function pauseSimulation() {
+            animationState.isPaused = true;
+
+            if (animationState.animationFrameId) {
+                cancelAnimationFrame(animationState.animationFrameId);
+            }
+
+            document.getElementById('start-sim-btn').textContent = '> RESUME';
+            document.getElementById('start-sim-btn').style.display = 'block';
+            document.getElementById('pause-sim-btn').style.display = 'none';
+            document.getElementById('sim-status').textContent = 'Status: PAUSED';
+            document.getElementById('sim-status').style.color = '#ffaa00';
+        }
+
+        function resetSimulation() {
+            animationState.isRunning = false;
+            animationState.isPaused = false;
+            animationState.startTime = null;
+
+            if (animationState.animationFrameId) {
+                cancelAnimationFrame(animationState.animationFrameId);
+            }
+
+            animationState.animatedConvoys.forEach(ac => {
+                if (ac.marker) map.removeLayer(ac.marker);
+            });
+            animationState.animatedConvoys = [];
+
+            document.getElementById('start-sim-btn').textContent = '> START SIMULATION';
+            document.getElementById('start-sim-btn').style.display = 'block';
+            document.getElementById('pause-sim-btn').style.display = 'none';
+            document.getElementById('sim-status').textContent = 'Status: STOPPED';
+            document.getElementById('sim-status').style.color = '#888';
+
+            // Reset progress bars in table
+            const rows = document.querySelectorAll('#convoy-table-body tr');
+            rows.forEach(row => {
+                const progressBar = row.querySelector('.sim-progress-bar');
+                if (progressBar) progressBar.remove();
+            });
+        }
+
+        function updateSpeedMultiplier() {
+            animationState.speedMultiplier = parseInt(
+                document.getElementById('speed-multiplier').value
+            );
+        }
+
+        function animationLoop() {
+            if (!animationState.isRunning || animationState.isPaused) {
+                return;
+            }
+
+            const currentTime = performance.now();
+            const elapsedMs = currentTime - animationState.startTime;
+            const elapsedSimHours = (elapsedMs / 1000 / 3600) * animationState.speedMultiplier;
+
+            let allArrived = true;
+            let totalProgress = 0;
+
+            animationState.animatedConvoys.forEach(convoy => {
+                convoy.updatePosition(elapsedSimHours);
+
+                if (convoy.status !== 'arrived') {
+                    allArrived = false;
+                }
+
+                totalProgress += convoy.progress;
+                updateConvoyProgressBar(convoy.id, Math.round(convoy.progress * 100));
+            });
+
+            // Update overall status
+            const avgProgress = Math.round((totalProgress / animationState.animatedConvoys.length) * 100);
+            document.getElementById('sim-status').textContent = `Status: RUNNING (${avgProgress}%)`;
+
+            if (allArrived) {
+                document.getElementById('sim-status').textContent = 'Status: COMPLETE';
+                document.getElementById('sim-status').style.color = '#00ff88';
+                animationState.isRunning = false;
+                document.getElementById('start-sim-btn').textContent = '> RESTART';
+                document.getElementById('start-sim-btn').style.display = 'block';
+                document.getElementById('pause-sim-btn').style.display = 'none';
+                return;
+            }
+
+            animationState.animationFrameId = requestAnimationFrame(animationLoop);
+        }
+
+        function updateConvoyProgressBar(convoyId, progress) {
+            const rows = document.querySelectorAll('#convoy-table-body tr');
+            rows.forEach(row => {
+                const firstCell = row.querySelector('td');
+                if (firstCell && firstCell.textContent.includes(convoyId.toString())) {
+                    const etaCell = row.querySelectorAll('td')[6];
+                    if (etaCell) {
+                        let progressBar = etaCell.querySelector('.sim-progress-bar');
+                        if (!progressBar) {
+                            progressBar = document.createElement('div');
+                            progressBar.className = 'sim-progress-bar';
+                            progressBar.style.cssText = 'height: 3px; background: rgba(0,212,255,0.3); margin-top: 4px; border-radius: 2px;';
+                            progressBar.innerHTML = '<div style="height: 100%; background: #00ff88; border-radius: 2px; transition: width 0.1s;"></div>';
+                            etaCell.appendChild(progressBar);
+                        }
+                        const innerBar = progressBar.querySelector('div');
+                        if (innerBar) {
+                            innerBar.style.width = `${progress}%`;
+                        }
+                    }
+                }
+            });
+        }
+
+        // Fort Liberty Demo
+        async function launchFortLibertyTest() {
+            // Set region to CONUS
+            document.getElementById('region-select').value = 'CONUS';
+            filterSupplyPoints();
+
+            // Set Fort Liberty as supply point
+            document.getElementById('supply-point-select').value = 'SP001';
+            updateSupplyInfo();
+
+            // Run optimization
+            await runOptimization();
+
+            // Set speed to 60x for demo
+            document.getElementById('speed-multiplier').value = '60';
+            updateSpeedMultiplier();
+
+            // Start simulation after short delay
+            setTimeout(() => {
+                startSimulation();
+            }, 500);
         }
     </script>
 </body>
